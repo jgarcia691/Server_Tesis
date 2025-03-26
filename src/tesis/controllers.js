@@ -24,18 +24,32 @@ export const getTesisById = (req, res) => {
     });
 };
 
-// Subir una nueva tesis con archivo PDF
 export const uploadTesis = (req, res) => {
+    console.log("Archivo recibido:", req.file); // Verifica que el archivo esté presente
+    console.log("Cuerpo recibido:", req.body); // Verifica los datos adicionales que se reciben
+  
     const { id_encargado, id_sede, id_tutor, nombre, fecha, estado } = req.body;
-    const archivo_pdf = fs.readFileSync(req.file.path); // Leer el archivo PDF
-
+  
+    if (!req.file) {
+      return res.status(400).json({ message: "El archivo PDF es obligatorio" });
+    }
+  
+    const archivo_pdf = fs.readFileSync(req.file.path);
+    console.log("Archivo leído:", archivo_pdf); // Verifica que el archivo se haya leído correctamente
+  
     const sql = "INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    console.log("Ejecutando consulta SQL:", sql); // Verifica la consulta
     db.query(sql, [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf], (err, result) => {
-        fs.unlinkSync(req.file.path); // Eliminar el archivo temporal
-        if (err) return res.status(500).json({ message: "Error al subir la tesis", error: err });
+        if (err) {
+            console.error("Error al insertar en la base de datos:", err);
+            return res.status(500).json({ message: "Error al subir la tesis", error: err });
+        }
+        console.log("Tesis añadida correctamente:", result); // Verifica el resultado
         return res.json({ message: "Tesis subida correctamente" });
-    });
-};
+    });    
+  };
+  
+
 
 // Descargar un PDF de una tesis
 export const downloadTesis = (req, res) => {
@@ -58,5 +72,42 @@ export const deleteTesis = (req, res) => {
     db.query(sql, [id], (err, result) => {
         if (err) return res.status(500).json({ message: "Error al eliminar la tesis", error: err });
         return res.json({ message: "Tesis eliminada correctamente" });
+    });
+};
+
+
+
+export const updateTesis = (req, res) => {
+    const { id } = req.params;
+    const { nombre, fecha, estado } = req.body;
+
+    // Verifica si el archivo está presente
+    const archivoPdf = req.file ? fs.readFileSync(req.file.path) : null;
+
+    // Construye la consulta SQL
+    let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?`;
+    let params = [nombre, fecha, estado];
+
+    if (archivoPdf) {
+        query += `, archivo_pdf = ?`;
+        params.push(archivoPdf);  // El archivo debe ser leído como buffer
+    }
+
+    query += ` WHERE id = ?`;
+    params.push(id);
+
+    console.log("Consulta SQL:", query);  // Verifica la consulta generada
+    console.log("Parámetros:", params);  // Verifica los parámetros pasados
+
+    // Ejecuta la consulta
+    db.query(query, params, (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ message: 'Hubo un error al actualizar la tesis.' });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Tesis no encontrada.' });
+        }
+        res.status(200).json({ message: 'Tesis actualizada correctamente.' });
     });
 };
