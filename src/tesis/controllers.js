@@ -1,4 +1,5 @@
-import db from "../../db.js";
+import db from '../../config/db.js';
+
 import fs from "fs";
 
 // Obtener todas las tesis

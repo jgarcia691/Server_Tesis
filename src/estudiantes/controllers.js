@@ -1,4 +1,5 @@
-import db from "../../db.js";
+import db from '../../config/db.js';
+
 
 // Obtener todos los estudiantes
 export const getEstudiantes = (req, res) => {
