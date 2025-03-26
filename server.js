@@ -2,7 +2,10 @@ import express from 'express'
 import mysql from 'mysql'
 import cors from 'cors'
 
-const app= express();
+const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 const db= mysql.createConnection({
@@ -10,6 +13,33 @@ const db= mysql.createConnection({
     user:"root",
     password:"",
     database:"service"
+})
+
+app.get(`/getProfesor`,(req,res) =>{
+    const {email, password} = req.query;
+    const sql = `SELECT * FROM profesor WHERE email='${email}' AND password='${password}'`;    
+    db.query(sql, (err,result)=> {
+        if(err) return res.json({Message: "Error en el server"});
+        console.log("Profesor enviado")
+        return res.json(result);
+    }) 
+})
+
+app.post(`/createProfesor`, (req, res) => {
+    const sql = `INSERT INTO profesor (nombre, apellido, ci, email, telefono, password) VALUES (?)`;
+    const values = [
+        req.body.nombre,
+        req.body.apellido,
+        req.body.ci,
+        req.body.email,
+        req.body.telefono,
+        req.body.password
+    ];  
+    db.query(sql, [values], (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        console.log("Profesor agregado")
+        return res.json({ Message: "Profesor agregado" });
+    });
 })
 
 app.get('/',(req,res) =>{
