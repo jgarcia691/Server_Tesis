@@ -1,19 +1,18 @@
-import express from 'express'
-import mysql from 'mysql'
-import cors from 'cors'
+import express from 'express';
+import cors from 'cors';
+import tesisRoutes from './routes/tesis.routes.js'; 
+import db from './db.js' // Asegúrate de importar las rutas de tesis correctamente
 
 const app = express();
 
+// Middleware para parsear JSON
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 
-const db= mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    password:"",
-    database:"service"
-})
+//// Middleware para parsear URL-encoded bodies (formularios html)
+app.use(express.urlencoded({ extended: true }));
+
+// Middleware de CORS
+app.use(cors());
 
 app.get(`/getProfesor`,(req,res) =>{
     const {email, password} = req.query;
@@ -50,6 +49,11 @@ app.get('/',(req,res) =>{
    }) 
 })
 
-app.listen(8081, ()=> {
-    console.log("Listening");
-})
+// Rutas
+app.use("/api/tesis", tesisRoutes);
+
+// Puerto de escucha
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
