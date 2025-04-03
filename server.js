@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import tesisRoutes from "./src/tesis/routes.js"; 
 import routesEncargado from "./src/encargado/routes.js"; 
+import routesCarrera from "./src/carrera/routes.js"
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 
 app.use("/api", tesisRoutes); 
 app.use("/api/encargado", routesEncargado); 
+app.use("/api/carrera",routesCarrera);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
