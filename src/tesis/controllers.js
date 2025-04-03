@@ -24,6 +24,21 @@ export const getTesisById = (req, res) => {
     });
 };
 
+
+// Obtener una tesis por nombre (con PDF)
+export const getTesisByName = (req, res) => {
+    const { nombre } = req.params;
+    const sql = "SELECT * FROM Tesis WHERE nombre LIKE ?";
+    const searchTerm = `%${nombre}%`; // Añade los comodines %
+    db.query(sql, [searchTerm], (err, result) => {
+        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
+        if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
+
+        res.json(result); //Devuelve todo el array de results.
+    });
+};
+
+
 export const uploadTesis = (req, res) => {
     console.log("Archivo recibido:", req.file); // Verifica que el archivo esté presente
     console.log("Cuerpo recibido:", req.body); // Verifica los datos adicionales que se reciben
