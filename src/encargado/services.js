@@ -24,9 +24,9 @@ export class EncargadoService {
                     "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email"
                 );
             }
-            if (typeof data.ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'number' ||typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
+            if (typeof data.ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
                 throw new Error(
-                    "ci, telefono y password deben ser números; nombre, apellido y email deben ser cadenas."
+                    "ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas."
                 );
             }
             const resultado = await EncargadoRepository.create(data);
@@ -38,7 +38,7 @@ export class EncargadoService {
         }
     }
 
-   
+    
     static async update(ci, data) {
         try {
             console.log(`Actualizando encargado con CI: ${ci}, datos:`, data);
@@ -47,11 +47,9 @@ export class EncargadoService {
                     "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email"
                 );
             }
-            if (
-                typeof ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'number' ||typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string'
-            ) {
+            if (typeof ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
                 throw new Error(
-                    "ci, telefono y password deben ser números; nombre, apellido y email deben ser cadenas."
+                    "ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas."
                 );
             }
             const resultado = await EncargadoRepository.update(ci, data);
@@ -63,7 +61,7 @@ export class EncargadoService {
         }
     }
 
-   
+    // Eliminar un encargado
     static async delete(ci) {
         try {
             console.log(`Eliminando encargado con CI: ${ci}...`);
