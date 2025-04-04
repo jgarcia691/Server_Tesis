@@ -1,12 +1,12 @@
 import express from 'express';
-import {  getusuariocontroller, postusuariocontroller, putusuariocontroller, deleteusuariocontroller } from './controllers.js'; // Verifica que './controllers.js' esté correctamente ubicado
+import {  getencargadocontroller, postencargadocontroller,  putencargadocontroller, deletencargadocontroller } from './controllers.js'; 
 
 const router = express.Router();
 
-// Define las rutas
-router.get('/', getusuariocontroller);         
-router.post('/', postusuariocontroller);        
-router.put('/:ci', putusuariocontroller);       
-router.delete('/:ci', deleteusuariocontroller); 
+
+router.get('/username/:username', getencargadocontroller);         
+router.post('/', postencargadocontroller);        
+router.put('/:ci', putencargadocontroller);       
+router.delete('/:ci', deletencargadocontroller); 
 
 export default router;
