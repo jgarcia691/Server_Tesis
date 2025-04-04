@@ -1,43 +1,56 @@
-import {getEstudiantesRepository,createEstudianteRepository,updateEstudianteRepository,deleteEstudianteRepository,
-  } from './repository.js';
-  
-  export const getEstudiantes = (req, res) => {
-    getEstudiantesRepository((err, result) => {
-      if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
-      return res.status(200).json(result);
-    });
-  };
-  
-  export const createEstudiante = (req, res) => {
-    const { ci, nombre, apellido, telefono } = req.body;
-    if (!ci || !nombre || !apellido || !telefono) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+import { EstudianteRepository } from './repositories.js';
+
+export class EstudianteService {
+  static async getAll() {
+    try {
+      const estudiantes = await EstudianteRepository.getAll();
+      return { status: 'success', data: estudiantes };
+    } catch (error) {
+      console.error('Error en EstudianteService.getAll:', error.message);
+      throw new Error('No se pudieron obtener los estudiantes.');
     }
-    createEstudianteRepository({ ci, nombre, apellido, telefono }, (err, result) => {
-      if (err) return res.status(500).json({ message: "Error al insertar", error: err });
-      return res.status(201).json({ message: "Estudiante creado correctamente" });
-    });
-  };
-  
-  export const updateEstudiante = (req, res) => {
-    const { ci } = req.params;
-    const { nombre, apellido, telefono } = req.body;
-    if (!ci || !nombre || !apellido || !telefono) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+  }
+
+  static async getByCi(ci) {
+    try {
+      const estudiante = await EstudianteRepository.getByCi(ci);
+      if (!estudiante) {
+        throw new Error(`El estudiante con CI ${ci} no existe.`);
+      }
+      return { status: 'success', data: estudiante };
+    } catch (error) {
+      console.error(`Error en EstudianteService.getByCi (CI: ${ci}):`, error.message);
+      throw new Error(error.message);
     }
-    updateEstudianteRepository({ ci, nombre, apellido, telefono }, (err, result) => {
-      if (err) return res.status(500).json({ message: "Error al actualizar", error: err });
-      return res.status(200).json({ message: "Estudiante actualizado correctamente" });
-    });
-  };
-  
-  export const deleteEstudiante = (req, res) => {
-    const { ci } = req.params;
-    if (!ci) {
-      return res.status(400).json({ message: "El campo 'ci' es obligatorio" });
+  }
+
+  static async create(data) {
+    try {
+      const resultado = await EstudianteRepository.create(data);
+      return { status: 'success', message: 'Estudiante creado correctamente', data: resultado };
+    } catch (error) {
+      console.error('Error en EstudianteService.create:', error.message);
+      throw new Error('No se pudo crear el estudiante: ' + error.message);
     }
-    deleteEstudianteRepository(ci, (err, result) => {
-      if (err) return res.status(500).json({ message: "Error al eliminar", error: err });
-      return res.status(200).json({ message: "Estudiante eliminado correctamente" });
-    });
-  };
+  }
+
+  static async update(ci, data) {
+    try {
+      const resultado = await EstudianteRepository.update(ci, data);
+      return { status: 'success', message: 'Estudiante actualizado correctamente', data: resultado };
+    } catch (error) {
+      console.error(`Error en EstudianteService.update (CI: ${ci}):`, error.message);
+      throw new Error('No se pudo actualizar el estudiante: ' + error.message);
+    }
+  }
+
+  static async delete(ci) {
+    try {
+      const resultado = await EstudianteRepository.delete(ci);
+      return { status: 'success', message: 'Estudiante eliminado correctamente', data: resultado };
+    } catch (error) {
+      console.error(`Error en EstudianteService.delete (CI: ${ci}):`, error.message);
+      throw new Error('No se pudo eliminar el estudiante: ' + error.message);
+    }
+  }
+}

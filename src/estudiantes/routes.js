@@ -1,11 +1,12 @@
 import express from 'express';
-import { getAllEstudiantesController, createEstudianteController, updateEstudianteController, deleteEstudianteController } from './controller.js';
+import { getallEstudiantesControllers, createEstudianteControllers, updateEstudianteControllers, deleteEstudianteControllers,getidControllers } from './controllers.js';
 
 const router = express.Router();
 
-router.get('/', getAllEstudiantesController);       
-router.post('/', createEstudianteController);       
-router.put('/:ci', updateEstudianteController);     
-router.delete('/:ci', deleteEstudianteController);  
+router.get('/username/:username', getallEstudiantesControllers); 
+router.get('/ci/:ci', getidControllers); 
+router.post('/', createEstudianteControllers);       
+router.put('/:ci', updateEstudianteControllers);     
+router.delete('/:ci', deleteEstudianteControllers);  
 
 export default router;

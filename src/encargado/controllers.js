@@ -1,82 +1,83 @@
-import { UsuarioService } from './services.js';
+import { EncargadoService } from './services.js';
 
-export const getusuariocontroller = async (req, res) => {
+export const getencargadocontroller = async (req, res) => {
   try {
-    const usuarios = await UsuarioService.getAll();
-    res.status(200).json(usuarios); 
+    const encargados = await EncargadoService.getAll();
+    res.status(200).json(encargados);
   } catch (error) {
-    console.error('Error:', error); 
-    res.status(500).json({ message: "Error al obtener usuarios", error: error.message });
+    console.error('Error:', error.message);
+    res.status(500).json({ message: 'Error al obtener encargados', error: error.message });
   }
 };
 
-export const postusuariocontroller = async (req, res) => {
+export const postencargadocontroller = async (req, res) => {
   try {
-    const { ci, nombre, apellido, telefono, password } = req.body;
-    if (!ci || !nombre || !apellido || !telefono || !password) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password" });
+    const { ci, nombre, apellido, telefono, password, email } = req.body;
+
+    if (!ci || !nombre || !apellido || !telefono || !password || !email) {
+      return res.status(400).json({
+        message: 'Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email',
+      });
     }
-    if (
-      typeof ci !== 'number' || 
-      typeof telefono !== 'number' || 
-      typeof password !== 'number' || 
-      typeof nombre !== 'string' || 
-      typeof apellido !== 'string'
-    ) {
-      return res.status(400).json({ message: "ci, telefono y password deben ser números, nombre y apellido deben ser cadenas" });
+
+    if (typeof ci !== 'number' ||typeof telefono !== 'number' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
+      return res.status(400).json({
+        message: 'ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas.',
+      });
     }
-    await UsuarioService.create({ ci, nombre, apellido, telefono, password });
-    res.status(201).json({ message: "Usuario creado correctamente" });
+
+    await EncargadoService.create({ ci, nombre, apellido, telefono, password, email });
+    res.status(201).json({ message: 'Encargado creado correctamente' });
   } catch (error) {
-    console.error('Error:', error); 
-    res.status(500).json({ message: "Error al crear usuario", error: error.message });
+    console.error('Error:', error.message);
+    res.status(500).json({ message: 'Error al crear encargado', error: error.message });
   }
 };
 
-export const putusuariocontroller = async (req, res) => {
+export const putencargadocontroller = async (req, res) => {
   try {
     const ci = Number(req.params.ci);
-    const { nombre, apellido, telefono, password } = req.body;
+    const { nombre, apellido, telefono, password, email } = req.body;
 
     const telefonoNumber = Number(telefono);
-    const passwordNumber = Number(password);
 
-    if (!ci || !nombre || !apellido || !telefonoNumber || !passwordNumber) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password" });
+    if (!ci || !nombre || !apellido || !email || !telefonoNumber || !password) {
+      return res.status(400).json({
+        message: 'Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email',
+      });
     }
-    if (
-      isNaN(ci) || 
-      isNaN(telefonoNumber) || 
-      isNaN(passwordNumber) || 
-      typeof nombre !== 'string' || 
-      typeof apellido !== 'string'
-    ) {
-      return res.status(400).json({ message: "ci, telefono y password deben ser números válidos, nombre y apellido deben ser cadenas" });
+
+    if (isNaN(ci) ||isNaN(telefonoNumber) ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
+      return res.status(400).json({
+        message: 'ci y telefono deben ser números válidos; nombre, apellido, email y password deben ser cadenas.',
+      });
     }
-    await UsuarioService.update(ci, { nombre, apellido, telefono: telefonoNumber, password: passwordNumber });
-    res.status(200).json({ message: "Usuario actualizado correctamente" });
+
+    await EncargadoService.update(ci, { nombre, apellido, telefono: telefonoNumber, password, email });
+    res.status(200).json({ message: 'Encargado actualizado correctamente' });
   } catch (error) {
-    console.error('Error en putusuariocontroller:', error);
-    res.status(500).json({ message: "Error al actualizar usuario", error: error.message });
+    console.error('Error en putencargadocontroller:', error.message);
+    res.status(500).json({ message: 'Error al actualizar encargado', error: error.message });
   }
 };
 
-export const deleteusuariocontroller = async (req, res) => {
+export const deletencargadocontroller = async (req, res) => {
   try {
     const { ci } = req.params;
+
     if (!ci) {
-      return res.status(400).json({ message: "El campo ci es obligatorio" });
+      return res.status(400).json({ message: 'El campo ci es obligatorio' });
     }
 
     const ciNumber = Number(ci);
     if (isNaN(ciNumber)) {
-      return res.status(400).json({ message: "El campo ci debe ser un número válido" });
+      return res.status(400).json({ message: 'El campo ci debe ser un número válido' });
     }
 
-    await UsuarioService.delete(ciNumber);
-    res.status(200).json({ message: "Usuario eliminado correctamente" });
+    await EncargadoService.delete(ciNumber);
+    res.status(200).json({ message: 'Encargado eliminado correctamente' });
   } catch (error) {
-    console.error('Error:', error); 
-    res.status(500).json({ message: "Error al eliminar usuario", error: error.message });
+    console.error('Error:', error.message);
+    res.status(500).json({ message: 'Error al eliminar encargado', error: error.message });
   }
 };
