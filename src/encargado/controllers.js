@@ -20,11 +20,9 @@ export const postencargadocontroller = async (req, res) => {
       });
     }
 
-    if (
-      typeof ci !== 'number' ||typeof telefono !== 'number' ||typeof password !== 'number' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string'
-    ) {
+    if (typeof ci !== 'number' ||typeof telefono !== 'number' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
       return res.status(400).json({
-        message: 'ci, telefono y password deben ser números; nombre, apellido y email deben ser cadenas.',
+        message: 'ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas.',
       });
     }
 
@@ -42,24 +40,20 @@ export const putencargadocontroller = async (req, res) => {
     const { nombre, apellido, telefono, password, email } = req.body;
 
     const telefonoNumber = Number(telefono);
-    const passwordNumber = Number(password);
 
-    if (!ci || !nombre || !apellido || !telefonoNumber || !passwordNumber || !email) {
+    if (!ci || !nombre || !apellido || !email || !telefonoNumber || !password) {
       return res.status(400).json({
         message: 'Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email',
       });
     }
 
-    if (
-      isNaN(ci) ||isNaN(telefonoNumber) ||isNaN(passwordNumber) ||
-      typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string'
-    ) {
+    if (isNaN(ci) ||isNaN(telefonoNumber) ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
       return res.status(400).json({
-        message: 'ci, telefono y password deben ser números válidos; nombre, apellido y email deben ser cadenas.',
+        message: 'ci y telefono deben ser números válidos; nombre, apellido, email y password deben ser cadenas.',
       });
     }
 
-    await EncargadoService.update(ci, { nombre, apellido, telefono: telefonoNumber, password: passwordNumber, email });
+    await EncargadoService.update(ci, { nombre, apellido, telefono: telefonoNumber, password, email });
     res.status(200).json({ message: 'Encargado actualizado correctamente' });
   } catch (error) {
     console.error('Error en putencargadocontroller:', error.message);
