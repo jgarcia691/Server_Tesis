@@ -34,21 +34,21 @@ export const getidControllers = async (req, res) => {
 
 export const createEstudianteControllers = async (req, res) => {
   try {
-    const { ci, nombre, apellido, email, telefono, password } = req.body;
+    const { ci, nombre, apellido, email, telefono } = req.body;
 
-    if (!ci || !nombre || !apellido || !email || !telefono || !password) {
+    if (!ci || !nombre || !apellido || !email || !telefono) {
       return res.status(400).json({
-        message: 'Todos los campos son obligatorios: ci, nombre, apellido, email, telefono, password',
+        message: 'Todos los campos son obligatorios: ci, nombre, apellido, email, telefono',
       });
     }
 
-    if (typeof ci !== 'number' ||typeof telefono !== 'number' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string') {
+    if (typeof ci !== 'number' || typeof telefono !== 'number' || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
       return res.status(400).json({
-        message: 'ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas.',
+        message: 'ci y telefono deben ser números; nombre, apellido y email deben ser cadenas.',
       });
     }
 
-    await EstudianteService.create({ ci, nombre, apellido, email, telefono, password });
+    await EstudianteService.create({ ci, nombre, apellido, email, telefono });
     res.status(201).json({ message: 'Estudiante creado correctamente' });
   } catch (error) {
     console.error('Error:', error.message);
@@ -59,23 +59,23 @@ export const createEstudianteControllers = async (req, res) => {
 export const updateEstudianteControllers = async (req, res) => {
   try {
     const ci = Number(req.params.ci);
-    const { nombre, apellido, email, telefono, password } = req.body;
+    const { nombre, apellido, email, telefono } = req.body;
 
     const telefonoNumber = Number(telefono);
 
-    if (!ci || !nombre || !apellido || !email || !telefonoNumber || !password) {
+    if (!ci || !nombre || !apellido || !email || !telefonoNumber) {
       return res.status(400).json({
-        message: 'Todos los campos son obligatorios: ci, nombre, apellido, email, telefono, password',
+        message: 'Todos los campos son obligatorios: ci, nombre, apellido, email, telefono',
       });
     }
 
-    if (isNaN(ci) ||isNaN(telefonoNumber) ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' || typeof password !== 'string') {
+    if (isNaN(ci) || isNaN(telefonoNumber) || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
       return res.status(400).json({
-        message: 'ci y telefono deben ser números válidos; nombre, apellido, email y password deben ser cadenas.',
+        message: 'ci y telefono deben ser números válidos; nombre, apellido y email deben ser cadenas.',
       });
     }
 
-    await EstudianteService.update(ci, { nombre, apellido, email, telefono: telefonoNumber, password });
+    await EstudianteService.update(ci, { nombre, apellido, email, telefono: telefonoNumber });
     res.status(200).json({ message: 'Estudiante actualizado correctamente' });
   } catch (error) {
     console.error('Error en updateEstudianteController:', error.message);
