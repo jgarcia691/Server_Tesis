@@ -27,10 +27,10 @@ export class EstudianteRepository {
     });
   }
 
-  static async create({ ci, nombre, apellido, email, telefono, password }) {
+  static async create({ ci, nombre, apellido, email, telefono }) {
     return new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO Estudiante (ci, nombre, apellido, email, telefono, password) VALUES (?, ?, ?, ?, ?, ?)';
-      db.query(sql, [ci, nombre, apellido, email, telefono, password], (err, result) => {
+      const sql = 'INSERT INTO Estudiante (ci, nombre, apellido, email, telefono) VALUES (?, ?, ?, ?, ?)';
+      db.query(sql, [ci, nombre, apellido, email, telefono], (err, result) => {
         if (err) {
           console.error('Error en EstudianteRepository.create:', err.message);
           return reject(err);
@@ -40,10 +40,10 @@ export class EstudianteRepository {
     });
   }
 
-  static async update(ci, { nombre, apellido, email, telefono, password }) {
+  static async update(ci, { nombre, apellido, email, telefono }) {
     return new Promise((resolve, reject) => {
-      const sql = 'UPDATE Estudiante SET nombre = ?, apellido = ?, email = ?, telefono = ?, password = ? WHERE ci = ?';
-      db.query(sql, [nombre, apellido, email, telefono, password, ci], (err, result) => {
+      const sql = 'UPDATE Estudiante SET nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?';
+      db.query(sql, [nombre, apellido, email, telefono, ci], (err, result) => {
         if (err) {
           console.error('Error en EstudianteRepository.update:', err.message);
           return reject(err);
