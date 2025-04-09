@@ -28,7 +28,7 @@ const upload = multer({
 // Definición de rutas
 router.get("/tesis", getTesis); // Obtener todas las tesis
 router.get("/tesis/:id", getTesisById); // Obtener una tesis por ID
-router.get("/tesis/:string",getTesisByName ); // Obtener una tesis que contenga x cadena en su nombre
+router.get("/tesis/cadena/:nombre",getTesisByName ); // Obtener una tesis que contenga x cadena en su nombre
 router.post("/tesis", upload.single("archivo_pdf"), uploadTesis); // Subir una nueva tesis con PDF
 router.get("/tesis/:id/download", downloadTesis); // Descargar un PDF de una tesis
 router.delete("/tesis/:id", deleteTesis); // Eliminar una tesis

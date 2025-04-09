@@ -27,9 +27,11 @@ export const getTesisById = (req, res) => {
 
 // Obtener una tesis por nombre (con PDF)
 export const getTesisByName = (req, res) => {
+    console.log(req.params);
     const { nombre } = req.params;
     const sql = "SELECT * FROM Tesis WHERE nombre LIKE ?";
     const searchTerm = `%${nombre}%`; // Añade los comodines %
+    console.log(`Buscando término:`,searchTerm);
     db.query(sql, [searchTerm], (err, result) => {
         if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
         if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
