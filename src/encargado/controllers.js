@@ -20,7 +20,7 @@ export const postencargadocontroller = async (req, res) => {
       });
     }
 
-    if (typeof ci !== 'number' ||typeof telefono !== 'number' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
+    if (typeof ci !== 'number' ||typeof telefono !== 'string' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
       return res.status(400).json({
         message: 'ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas.',
       });

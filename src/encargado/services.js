@@ -24,7 +24,7 @@ export class EncargadoService {
                     "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email"
                 );
             }
-            if (typeof data.ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
+            if (typeof data.ci !== 'number' ||typeof data.telefono !== 'string' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
                 throw new Error(
                     "ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas."
                 );
