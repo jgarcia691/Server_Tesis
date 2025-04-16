@@ -16,7 +16,7 @@ export class ProfesorService {
 
   static async getProfesor(ci){
     try{
-        console.log('Obteniendo profesor');
+        console.log('Obteniendo profesor', ci);
         const profesor = await ProfesorRepository.getProfesor(ci);
         console.log('profesor obtenida: ', profesor);
         return {status: 'success', data: profesor};
@@ -37,7 +37,7 @@ export class ProfesorService {
         typeof data.nombre !== 'string' || 
         typeof data.apellido !== 'string' ||
         typeof data.email !== 'string' ||
-        typeof data.telefono !== 'number'
+        typeof data.telefono !== 'string'
       ) {
         throw new Error("codigo debe ser numero, campo y nombre cadenas.");
       }

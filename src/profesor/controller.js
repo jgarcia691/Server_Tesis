@@ -29,7 +29,7 @@ export const postprofesorcontroller = async (req, res) => {
     }
     if (
       typeof ci !== 'number' || 
-      typeof telefono !== 'number' || 
+      typeof telefono !== 'string' || 
       typeof email !== 'string' || 
       typeof nombre !== 'string' || 
       typeof apellido !== 'string'
