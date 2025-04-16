@@ -45,7 +45,7 @@ export const uploadTesis = (req, res) => {
     console.log("Archivo recibido:", req.file); // Verifica que el archivo esté presente
     console.log("Cuerpo recibido:", req.body); // Verifica los datos adicionales que se reciben
   
-    const { id_encargado, id_sede, id_tutor, nombre, fecha, estado } = req.body;
+    const {nombre,autor,id_tutor, id_encargado, fecha,id_sede, estado } = req.body;
   
     if (!req.file) {
       return res.status(400).json({ message: "El archivo PDF es obligatorio" });
@@ -54,9 +54,9 @@ export const uploadTesis = (req, res) => {
     const archivo_pdf = fs.readFileSync(req.file.path);
     console.log("Archivo leído:", archivo_pdf); // Verifica que el archivo se haya leído correctamente
   
-    const sql = "INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    const sql = "INSERT INTO Tesis (nombre, autor, id_tutor, id_encargado, fecha, id_sede, estado, archivo_pdf) VALUES (?, ?, ?, ?, ?, ?, ?,?)";
     console.log("Ejecutando consulta SQL:", sql); // Verifica la consulta
-    db.query(sql, [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf], (err, result) => {
+    db.query(sql, [nombre,autor,id_tutor, id_encargado, fecha,id_sede, estado, archivo_pdf], (err, result) => {
         if (err) {
             console.error("Error al insertar en la base de datos:", err);
             return res.status(500).json({ message: "Error al subir la tesis", error: err });
