@@ -41,7 +41,7 @@ export const postsedecontroller = async (req, res) => {
         }
 
         const idNumber = Number(id);
-        if (isNaN(idNumber) || typeof telefono !== 'number' || typeof nombre !== 'string' || typeof Direccion !== 'string') {
+        if (isNaN(idNumber) || typeof telefono !== 'string' || typeof nombre !== 'string' || typeof Direccion !== 'string') {
             return res.status(400).json({
                 message: "id y telefono deben ser números; nombre y Direccion deben ser cadenas."
             });

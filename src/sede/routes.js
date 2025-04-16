@@ -4,7 +4,7 @@ import { getsedecontroller, postsedecontroller, deletesedecontroller, getsedebyi
 const router = express.Router();
 
 
-router.get('/:id', getsedebyidcontroller); 
+router.get('/search/:id', getsedebyidcontroller); 
 router.get('/', getsedecontroller);       
 router.post('/', postsedecontroller);    
 router.delete('/:id', deletesedecontroller); 

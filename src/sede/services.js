@@ -44,7 +44,7 @@ export class SedeService {
             }
 
             if (
-                typeof id !== 'number' ||isNaN(id) ||typeof telefono !== 'number' ||typeof nombre !== 'string' || typeof Direccion !== 'string'
+                typeof id !== 'number' ||isNaN(id) ||typeof telefono !== 'string' ||typeof nombre !== 'string' || typeof Direccion !== 'string'
             ) {
                 throw new Error('id y telefono deben ser números válidos; nombre y Direccion deben ser cadenas.');
             }
