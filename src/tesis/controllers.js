@@ -4,7 +4,7 @@ import fs from "fs";
 
 // Obtener todas las tesis
 export const getTesis = (req, res) => {
-    const sql = "SELECT id, nombre, fecha, estado FROM Tesis";
+    const sql = "SELECT nombre, id_encargado, id_tutor, id_sede, autor, fecha, estado FROM Tesis";
     db.query(sql, (err, result) => {
         if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
         return res.json(result);
@@ -31,7 +31,7 @@ export const getTesisByName = (req, res) => {
     const { nombre } = req.params;
     const sql = "SELECT * FROM Tesis WHERE nombre LIKE ?";
     const searchTerm = `%${nombre}%`; // Añade los comodines %
-    console.log(`Buscando término:`,searchTerm);
+    console.log(`Buscando término:`, searchTerm);
     db.query(sql, [searchTerm], (err, result) => {
         if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
         if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
@@ -46,11 +46,11 @@ export const uploadTesis = (req, res) => {
     console.log("Cuerpo recibido:", req.body); // Verifica los datos adicionales que se reciben
   
     const {nombre,autor,id_tutor, id_encargado, fecha,id_sede, estado } = req.body;
-  
+ 
     if (!req.file) {
-      return res.status(400).json({ message: "El archivo PDF es obligatorio" });
+        return res.status(400).json({ message: "El archivo PDF es obligatorio" });
     }
-  
+
     const archivo_pdf = fs.readFileSync(req.file.path);
     console.log("Archivo leído:", archivo_pdf); // Verifica que el archivo se haya leído correctamente
   
@@ -63,9 +63,9 @@ export const uploadTesis = (req, res) => {
         }
         console.log("Tesis añadida correctamente:", result); // Verifica el resultado
         return res.json({ message: "Tesis subida correctamente" });
-    });    
-  };
-  
+    });
+};
+
 
 
 // Descargar un PDF de una tesis

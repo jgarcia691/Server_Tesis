@@ -6,6 +6,12 @@ const db = mysql.createConnection({
     password: "Unegservice25$",      // Ajusta con tu contraseña
     database: "SERVICE", // Ajusta con tu nombre de base de datos
 });
+// const db = mysql.createConnection({
+//     host: "127.0.0.1",
+//     user: "root",
+//     password: "",
+//     database: "SERVICE"
+// })
 
 db.connect((err) => {
     if (err) {

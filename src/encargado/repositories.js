@@ -2,7 +2,7 @@ import db from '../../config/db.js';
 
 export class EncargadoRepository {
 
-    
+
     static async getAll() {
         return new Promise((resolve, reject) => {
             const sql = "SELECT * FROM Encargado";
@@ -16,7 +16,16 @@ export class EncargadoRepository {
         });
     }
 
-   
+    static async getEncargado(ci) {
+        return new Promise((resolve, reject) => {
+            const sql = "SELECT * FROM Encargado WHERE ci = ?";
+            db.query(sql, [ci], (err, result) => {
+                if (err) return reject(err);
+                resolve(result.length ? result[0] : null);
+            });
+        });
+    }
+
     static async create({ ci, nombre, apellido, telefono, password, email }) {
         return new Promise((resolve, reject) => {
             const sql = "INSERT INTO Encargado (ci, nombre, apellido, telefono, password, email) VALUES (?, ?, ?, ?, ?, ?)";
@@ -30,7 +39,7 @@ export class EncargadoRepository {
         });
     }
 
-    
+
     static async update(ci, { nombre, apellido, telefono, password, email }) {
         return new Promise((resolve, reject) => {
             const sql = "UPDATE Encargado SET nombre = ?, apellido = ?, telefono = ?, password = ?, email = ? WHERE ci = ?";
@@ -44,7 +53,7 @@ export class EncargadoRepository {
         });
     }
 
-   
+
     static async delete(ci) {
         return new Promise((resolve, reject) => {
             const sql = "DELETE FROM Encargado WHERE ci = ?";
