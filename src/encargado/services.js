@@ -2,7 +2,7 @@ import { EncargadoRepository } from './repositories.js';
 
 export class EncargadoService {
 
-    
+
     static async getAll() {
         try {
             console.log('Obteniendo todos los encargados...');
@@ -15,7 +15,19 @@ export class EncargadoService {
         }
     }
 
-    
+    static async getEncargado(ci) {
+        try {
+            console.log('Obteniendo encargado', ci);
+            const encargado = await EncargadoRepository.getEncargado(ci);
+            console.log('encargado obtenido: ', encargado);
+            return { status: 'success', data: encargado };
+        } catch (error) {
+            console.error('Error al obtener encargado: ', error.message);
+            throw new Error('No se pudo obtener el encargado.');
+        }
+    }
+
+
     static async create(data) {
         try {
             console.log('Creando un nuevo encargado con los datos:', data);
@@ -24,7 +36,7 @@ export class EncargadoService {
                     "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email"
                 );
             }
-            if (typeof data.ci !== 'number' ||typeof data.telefono !== 'string' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
+            if (typeof data.ci !== 'number' || typeof data.telefono !== 'string' || typeof data.password !== 'string' || typeof data.nombre !== 'string' || typeof data.apellido !== 'string' || typeof data.email !== 'string') {
                 throw new Error(
                     "ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas."
                 );
@@ -38,7 +50,7 @@ export class EncargadoService {
         }
     }
 
-    
+
     static async update(ci, data) {
         try {
             console.log(`Actualizando encargado con CI: ${ci}, datos:`, data);
@@ -47,7 +59,7 @@ export class EncargadoService {
                     "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email"
                 );
             }
-            if (typeof ci !== 'number' ||typeof data.telefono !== 'number' ||typeof data.password !== 'string' || typeof data.nombre !== 'string' ||typeof data.apellido !== 'string' ||typeof data.email !== 'string') {
+            if (typeof ci !== 'number' || typeof data.telefono !== 'number' || typeof data.password !== 'string' || typeof data.nombre !== 'string' || typeof data.apellido !== 'string' || typeof data.email !== 'string') {
                 throw new Error(
                     "ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas."
                 );

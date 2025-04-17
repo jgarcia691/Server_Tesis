@@ -1,6 +1,6 @@
 import { EncargadoService } from './services.js';
 
-export const getencargadocontroller = async (req, res) => {
+export const getallencargadocontroller = async (req, res) => {
   try {
     const encargados = await EncargadoService.getAll();
     res.status(200).json(encargados);
@@ -9,6 +9,17 @@ export const getencargadocontroller = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener encargados', error: error.message });
   }
 };
+
+export const getencargadocontroller = async (req, res) => {
+  try {
+    const { ci } = req.params;
+    const encargado = await EncargadoService.getEncargado(ci);
+    res.status(200).json(encargado);
+  } catch (error) {
+    console.error('Error: ', error);
+    res.status(500).json({ message: "Error al obtener encargado", error: error.message });
+  }
+}
 
 export const postencargadocontroller = async (req, res) => {
   try {
@@ -20,7 +31,7 @@ export const postencargadocontroller = async (req, res) => {
       });
     }
 
-    if (typeof ci !== 'number' ||typeof telefono !== 'string' ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
+    if (typeof ci !== 'number' || typeof telefono !== 'string' || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({
         message: 'ci y telefono deben ser números; nombre, apellido, email y password deben ser cadenas.',
       });
@@ -47,7 +58,7 @@ export const putencargadocontroller = async (req, res) => {
       });
     }
 
-    if (isNaN(ci) ||isNaN(telefonoNumber) ||typeof nombre !== 'string' ||typeof apellido !== 'string' ||typeof email !== 'string' ||typeof password !== 'string' ) {
+    if (isNaN(ci) || isNaN(telefonoNumber) || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({
         message: 'ci y telefono deben ser números válidos; nombre, apellido, email y password deben ser cadenas.',
       });
