@@ -3,7 +3,8 @@ import { getallEstudiantesControllers, createEstudianteControllers, updateEstudi
 
 const router = express.Router();
 
-router.get('/username/:username', getallEstudiantesControllers); 
+//router.get('/username/:username', getallEstudiantesControllers); 
+router.get('/', getallEstudiantesControllers); 
 router.get('/ci/:ci', getidControllers); 
 router.post('/', createEstudianteControllers);       
 router.put('/:ci', updateEstudianteControllers);     

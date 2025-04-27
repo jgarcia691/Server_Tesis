@@ -42,9 +42,9 @@ export const createEstudianteControllers = async (req, res) => {
       });
     }
 
-    if (typeof ci !== 'number' || typeof telefono !== 'number' || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
+    if (typeof ci !== 'number' || typeof telefono !== 'string' || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
       return res.status(400).json({
-        message: 'ci y telefono deben ser números; nombre, apellido y email deben ser cadenas.',
+        message: 'ci  debe ser número; telefono, nombre, apellido y email deben ser cadenas.',
       });
     }
 
@@ -61,7 +61,6 @@ export const updateEstudianteControllers = async (req, res) => {
     const ci = Number(req.params.ci);
     const { nombre, apellido, email, telefono } = req.body;
 
-    const telefonoNumber = Number(telefono);
 
     if (!ci || !nombre || !apellido || !email || !telefonoNumber) {
       return res.status(400).json({
@@ -69,7 +68,7 @@ export const updateEstudianteControllers = async (req, res) => {
       });
     }
 
-    if (isNaN(ci) || isNaN(telefonoNumber) || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
+    if (isNaN(ci) || typeof telefono !== 'string' || typeof nombre !== 'string' || typeof apellido !== 'string' || typeof email !== 'string') {
       return res.status(400).json({
         message: 'ci y telefono deben ser números válidos; nombre, apellido y email deben ser cadenas.',
       });

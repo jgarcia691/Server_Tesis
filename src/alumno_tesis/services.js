@@ -37,12 +37,11 @@ export class AlumnoTesisService {
     try {
       console.log('Creando nuevo registro en Alumno_tesis con datos:', data);
 
-      if (!data.id || !data.id_estudiante || !data.id_tesis) {
-        throw new Error("Todos los campos son obligatorios: id, id_estudiante, id_tesis");
+      if (!data.id_estudiante || !data.id_tesis) {
+        throw new Error("Todos los campos son obligatorios: id_estudiante, id_tesis");
       }
 
       if (
-        typeof data.id !== 'number' ||
         typeof data.id_estudiante !== 'number' ||
         typeof data.id_tesis !== 'number'
       ) {

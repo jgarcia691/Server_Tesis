@@ -30,21 +30,21 @@ export const getAlumnoTesisByIdController = async (req, res) => {
 
 export const postAlumnoTesisController = async (req, res) => {
   try {
-    const { id, id_estudiante, id_tesis } = req.body;
+    const {id_estudiante, id_tesis } = req.body;
 
-    if (!id || !id_estudiante || !id_tesis) {
+    if (!id_estudiante || !id_tesis) {
       return res.status(400).json({
-        message: 'Todos los campos son obligatorios: id, id_estudiante, id_tesis',
+        message: 'Todos los campos son obligatorios:id_estudiante, id_tesis',
       });
     }
 
-    if (typeof id !== 'number' || typeof id_estudiante !== 'number' || typeof id_tesis !== 'number') {
+    if (typeof id_estudiante !== 'number' || typeof id_tesis !== 'number') {
       return res.status(400).json({
         message: 'Todos los campos deben ser números.',
       });
     }
 
-    const result = await AlumnoTesisService.create({ id, id_estudiante, id_tesis });
+    const result = await AlumnoTesisService.create({id_estudiante, id_tesis });
     res.status(201).json(result);
   } catch (error) {
     console.error('Error en POST Alumno_tesis:', error.message);
