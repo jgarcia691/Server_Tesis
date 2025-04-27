@@ -2,68 +2,65 @@ import db from '../../config/db.js';
 
 export class EncargadoRepository {
 
-
+    
+    
     static async getAll() {
-        return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM Encargado";
-            db.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error en getAll:', err.message);
-                    return reject(err);
-                }
-                resolve(result);
-            });
-        });
+            try {
+                const sql = "SELECT * FROM Encargado;";
+                const result = await db.execute(sql);
+                return result.rows;  // Aquí están los datos
+            } catch (err) {
+                console.error('Error en getAll:', err.message);
+                throw err;
+            }
     }
-
-    static async getEncargado(ci) {
-        return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM Encargado WHERE ci = ?";
-            db.query(sql, [ci], (err, result) => {
-                if (err) return reject(err);
-                resolve(result.length ? result[0] : null);
-            });
-        });
-    }
-
+    
     static async create({ ci, nombre, apellido, telefono, password, email }) {
-        return new Promise((resolve, reject) => {
-            const sql = "INSERT INTO Encargado (ci, nombre, apellido, telefono, password, email) VALUES (?, ?, ?, ?, ?, ?)";
-            db.query(sql, [ci, nombre, apellido, telefono, password, email], (err, result) => {
-                if (err) {
-                    console.error('Error en create:', err.message);
-                    return reject(err);
-                }
-                resolve(result);
+        try {
+            const sql = `
+                INSERT INTO Encargado (ci, nombre, apellido, telefono, password, email) 
+                VALUES (?, ?, ?, ?, ?, ?);
+            `;
+            const result = await db.execute({
+                sql,
+                args: [ci, nombre, apellido, telefono, password, email],
             });
-        });
+            return result;
+        } catch (err) {
+            console.error('Error en create:', err.message);
+            throw err;
+        }
     }
-
 
     static async update(ci, { nombre, apellido, telefono, password, email }) {
-        return new Promise((resolve, reject) => {
-            const sql = "UPDATE Encargado SET nombre = ?, apellido = ?, telefono = ?, password = ?, email = ? WHERE ci = ?";
-            db.query(sql, [nombre, apellido, telefono, password, email, ci], (err, result) => {
-                if (err) {
-                    console.error('Error en update:', err.message);
-                    return reject(err);
-                }
-                resolve(result);
+        try {
+            const sql = `
+                UPDATE Encargado 
+                SET nombre = ?, apellido = ?, telefono = ?, password = ?, email = ?
+                WHERE ci = ?;
+            `;
+            const result = await db.execute({
+                sql,
+                args: [nombre, apellido, telefono, password, email, ci],
             });
-        });
+            return result;
+        } catch (err) {
+            console.error('Error en update:', err.message);
+            throw err;
+        }
     }
 
-
     static async delete(ci) {
-        return new Promise((resolve, reject) => {
-            const sql = "DELETE FROM Encargado WHERE ci = ?";
-            db.query(sql, [ci], (err, result) => {
-                if (err) {
-                    console.error('Error en delete:', err.message);
-                    return reject(err);
-                }
-                resolve(result);
+        try {
+            const sql = "DELETE FROM Encargado WHERE ci = ?;";
+            const result = await db.execute({
+                sql,
+                args: [ci],
             });
-        });
+            return result;
+        } catch (err) {
+            console.error('Error en delete:', err.message);
+            throw err;
+        }
     }
 }

@@ -31,6 +31,8 @@ app.use("/api/alumno_carrera", alumno_carreraroutes);
 app.use("/api/alumno_tesis", alumno_tesisroutes);
 app.use("/api/carrera_tesis", carrera_tesisroutes);
 
+
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);

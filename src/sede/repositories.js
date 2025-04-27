@@ -2,64 +2,66 @@ import db from '../../config/db.js';
 
 export class SedeRepository {
 
-    
     static async getAll() {
-        return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM Sede";
-            db.query(sql, (err, result) => {
-                if (err) {
-                    console.error('Error en getAll:', err.message);
-                    return reject(err);
-                }
-                resolve(result);
-            });
-        });
-    }
-
-    
-    static async getById(id) {
-        return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM Sede WHERE id = ?";
-            db.query(sql, [id], (err, result) => {
-                if (err) return reject(err);
-                resolve(result.length ? result[0] : null);
-            });
-        });
-    }
-
-    
-    static async create(data) {
         try {
-            const { id, nombre, Direccion, telefono } = data;
-            if (!id || !nombre || !Direccion || !telefono) {
-                throw new Error('Todos los campos son obligatorios: id, nombre, Direccion, telefono.');
-            }
-
-            if (
-                typeof id !== 'number' ||isNaN(id) ||typeof telefono !== 'string' ||typeof nombre !== 'string' || typeof Direccion !== 'string'
-            ) {
-                throw new Error('id y telefono deben ser números válidos; nombre y Direccion deben ser cadenas.');
-            }
-
-            console.log('Ejecutando consulta para crear una nueva sede con los datos:', data);
-            const query = 'INSERT INTO Sede (id, nombre, Direccion, telefono) VALUES (?, ?, ?, ?)';
-            await db.query(query, [id, nombre, Direccion, telefono]);
-            console.log('Sede creada exitosamente.');
-            return { message: 'Sede creada con éxito' };
-        } catch (error) {
-            console.error('Error en SedeRepository.create:', error.message);
-            throw new Error('No se pudo crear la sede: ' + error.message);
+            const result = await db.execute({
+                sql: 'SELECT * FROM Sede',
+            });
+            return result.rows;
+        } catch (err) {
+            console.error('Error en SedeRepository.getAll:', err.message);
+            throw err;
         }
     }
-
-    
-    static async delete(id) {
-        return new Promise((resolve, reject) => {
-            const sql = "DELETE FROM Sede WHERE id = ?";
-            db.query(sql, [id], (err, result) => {
-              if (err) return reject(err);
-              resolve(result);
+  
+    static async getById(id) {
+        try {
+            const result = await db.execute({
+              sql: 'SELECT * FROM Sede WHERE id = ?',
+              args: [id],
             });
-          });
+            return result.rows.length > 0 ? result.rows[0] : null;
+          } catch (err) {
+            console.error('Error en SedeRepository.getById:', err.message);
+            throw err;
+          }
     }
-}
+  
+    static async create({ id, nombre, Direccion, telefono }) {
+      try {
+        // Validación simple
+        if (!id || !nombre || !Direccion || !telefono) {
+          throw new Error('Todos los campos son obligatorios.');
+        }
+        
+        const sql = "INSERT INTO Sede (id, nombre, Direccion, telefono) VALUES (?, ?, ?, ?)";
+        const result = await db.execute(sql, [id, nombre, Direccion, telefono]);
+        
+        // Verificar qué contiene el resultado
+        console.log('Resultado de la inserción:', result);  // Agregado para ver el resultado exacto
+        return result;  // Retorna el resultado de la inserción
+      } catch (error) {
+        console.error('Error en SedeRepository.create:', error.message);
+        throw error;
+      }
+    }
+  
+    static async delete(id) {
+      try {
+        const sql = "DELETE FROM Sede WHERE id = ?";
+        const result = await db.execute(sql, [id]);
+        
+        // Verificar qué contiene el resultado
+        console.log('Resultado de la eliminación:', result);  // Agregado para ver el resultado exacto
+        
+        if (result.affectedRows === 0) {
+          throw new Error('No se encontró una sede con ese ID para eliminar.');
+        }
+        return result;  // Retorna el resultado de la eliminación
+      } catch (error) {
+        console.error('Error en SedeRepository.delete:', error.message);
+        throw error;
+      }
+    }
+  }
+  

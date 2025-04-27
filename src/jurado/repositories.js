@@ -2,35 +2,45 @@ import db from "../../config/db.js";
 
 export class JuradoRepository {
 
-    static async getJurado(id_tesis) {
-        return new Promise((resolve, reject) => {
-            console.log('buscando: ',id_tesis);
-            const sql = "SELECT * FROM jurado WHERE id_tesis = ?";
-            db.query(sql, [id_tesis], (err, result) => {
-                if (err) return reject(err);
-                resolve(result.length ? result[0] : null);
-            });
-        });
+  static async getJurado(id_tesis) {
+    try {
+      console.log('Buscando jurado para tesis:', id_tesis);
+      const result = await db.execute({
+        sql: "SELECT * FROM jurado WHERE id_tesis = ?",
+        args: [id_tesis],
+      });
+      return result.rows.length ? result.rows[0] : null;
+    } catch (err) {
+      console.error('Error en JuradoRepository.getJurado:', err.message);
+      throw err;
     }
+  }
 
-    static async create({ id_tesis, id_profesor}) {
-        return new Promise((resolve, reject) => {
-          const sql = "DELETE FROM jurado WHERE id_tesis = ?  AND id_profesor = ?";
-          db.query(sql, [id_tesis, id_profesor], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
+  static async create({ id_tesis, id_profesor }) {
+    try {
+      const result = await db.execute({
+        sql: "INSERT INTO jurado (id_tesis, id_profesor) VALUES (?, ?)",
+        args: [id_tesis, id_profesor],
+      });
+      return result;
+    } catch (err) {
+      console.error('Error en JuradoRepository.create:', err.message);
+      throw err;
     }
+  }
 
-    static async delete(id_tesis, id_profesor) {
-        return new Promise((resolve, reject) => {
-          const sql = "DELETE FROM jurado WHERE id_tesis = ? AND id_profesor = ? ";
-          console.log("Sentencia SQL a ejecutar:", sql, [id_tesis, id_profesor]);
-          db.query(sql, [id_tesis, id_profesor], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
+  static async delete(id_tesis, id_profesor) {
+    try {
+      console.log("Eliminando jurado con:", { id_tesis, id_profesor });
+      const result = await db.execute({
+        sql: "DELETE FROM jurado WHERE id_tesis = ? AND id_profesor = ?",
+        args: [id_tesis, id_profesor],
+      });
+      return result;
+    } catch (err) {
+      console.error('Error en JuradoRepository.delete:', err.message);
+      throw err;
     }
+  }
+
 }

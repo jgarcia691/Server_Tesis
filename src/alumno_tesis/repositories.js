@@ -3,58 +3,56 @@
 import db from '../../config/db.js';
 
 export class AlumnoTesisRepository {
-  
-  static async getAll() {
-    return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM Alumno_tesis';
-      db.query(sql, (err, result) => {
-        if (err) {
-          console.error('Error en getAll:', err.message);
-          return reject(err);
-        }
-        resolve(result);
-      });
-    });
-  }
 
+  static async getAll() {
+    try {
+      const result = await db.execute({
+        sql: 'SELECT * FROM Alumno_tesis',
+      });
+      return result.rows;
+    } catch (err) {
+      console.error('Error en getAll:', err.message);
+      throw err;
+    }
+  }
 
   static async getById(id) {
-    return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM Alumno_tesis WHERE id = ?';
-      db.query(sql, [id], (err, result) => {
-        if (err) {
-          console.error('Error en getById:', err.message);
-          return reject(err);
-        }
-        resolve(result);
+    try {
+      const result = await db.execute({
+        sql: 'SELECT * FROM Alumno_tesis WHERE id = ?',
+        args: [id],
       });
-    });
+      return result.rows;
+    } catch (err) {
+      console.error('Error en getById:', err.message);
+      throw err;
+    }
   }
 
-
-  static async create({id_estudiante, id_tesis }) {
-    return new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO Alumno_tesis (id_estudiante, id_tesis) VALUES (?, ?)';
-      db.query(sql, [id_estudiante, id_tesis], (err, result) => {
-        if (err) {
-          console.error('Error en create:', err.message);
-          return reject(err);
-        }
-        resolve(result);
+  static async create({ id_estudiante, id_tesis }) {
+    try {
+      const result = await db.execute({
+        sql: 'INSERT INTO Alumno_tesis (id_estudiante, id_tesis) VALUES (?, ?)',
+        args: [id_estudiante, id_tesis],
       });
-    });
+      return result;
+    } catch (err) {
+      console.error('Error en create:', err.message);
+      throw err;
+    }
   }
 
   static async delete(id) {
-    return new Promise((resolve, reject) => {
-      const sql = 'DELETE FROM Alumno_tesis WHERE id = ?';
-      db.query(sql, [id], (err, result) => {
-        if (err) {
-          console.error('Error en delete:', err.message);
-          return reject(err);
-        }
-        resolve(result);
+    try {
+      const result = await db.execute({
+        sql: 'DELETE FROM Alumno_tesis WHERE id = ?',
+        args: [id],
       });
-    });
+      return result;
+    } catch (err) {
+      console.error('Error en delete:', err.message);
+      throw err;
+    }
   }
+
 }

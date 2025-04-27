@@ -4,47 +4,67 @@ import fs from "fs";
 
 import { postAlumnoTesisController } from '../alumno_tesis/controllers.js'; 
 
-// Obtener todas las tesis
-export const getTesis = (req, res) => {
-    const sql = "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis";
-    db.query(sql, (err, result) => {
-        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
-        return res.json(result);
-    });
+export const getTesis = async (req, res) => {
+    try {
+        const result = await db.execute({
+            sql: 'SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis',
+        });
+
+        console.log("Resultado obtenido:", result);
+
+        // Ahora debes enviar el resultado por res.json()
+        res.json(result.rows);  // <- así responde correctamente al navegador
+    } catch (err) {
+        console.error('Error en getTesis:', err.message);
+        res.status(500).json({ message: "Error en el servidor", error: err.message });
+    }
 };
+
 
 // Obtener una tesis por ID (con PDF)
-export const getTesisById = (req, res) => {
-    const { id } = req.params;
-    const sql = "SELECT * FROM Tesis WHERE id = ?";
-    db.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
-        if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
+export const getTesisById = async (req, res) => {
+    try {
+        const result = await db.execute({
+            sql: 'SELECT * FROM Tesis',
+        });
 
-        const tesis = result[0];
-        res.json(tesis);
-    });
+        console.log("Resultado obtenido:", result);
+
+        // Ahora debes enviar el resultado por res.json()
+        res.json(result.rows);  // <- así responde correctamente al navegador
+    } catch (err) {
+        console.error('Error en getTesisById:', err.message);
+        res.status(500).json({ message: "Error en el servidor", error: err.message });
+    }
 };
 
-
 // Obtener una tesis por nombre (con PDF)
-export const getTesisByName = (req, res) => {
+export const getTesisByName = async (req, res) => {
     console.log(req.params);
     const { nombre } = req.params;
     const sql = "SELECT * FROM Tesis WHERE nombre LIKE ?";
     const searchTerm = `%${nombre}%`; // Añade los comodines %
-    console.log(`Buscando término:`, searchTerm);
-    db.query(sql, [searchTerm], (err, result) => {
-        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
-        if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
 
-        res.json(result); //Devuelve todo el array de results.
-    });
+    console.log(`Buscando término:`, searchTerm);
+
+    try {
+        const result = await db.execute(sql, [searchTerm]);  // Usando db.execute
+        const rows = result.rows || result; // si db.execute devuelve { rows: [...] } o simplemente [...]
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: "Tesis no encontrada" });
+        }
+
+        res.json(rows); // Devuelve todo el array de resultados
+    } catch (err) {
+        console.error('Error al obtener tesis por nombre:', err.message);
+        return res.status(500).json({ message: "Error en el servidor", error: err.message });
+    }
 };
 
 
 // Subir una nueva tesis
-export const uploadTesis = async (req, res) => {  // Aquí se añadió 'async'
+export const uploadTesis = async (req, res) => {
     console.log("Archivo recibido:", req.file);
     console.log("Cuerpo recibido:", req.body);
 
@@ -62,84 +82,89 @@ export const uploadTesis = async (req, res) => {  // Aquí se añadió 'async'
     }
 
     const archivo_pdf = fs.readFileSync(req.file.path);
+    console.log('Archivo recibido con tamaño:', archivo_pdf.length);
     console.log("Archivo leído:", archivo_pdf);
 
     // Primero, inserta la tesis en la tabla Tesis
-    const sqlTesis = "INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    db.query(sqlTesis, [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf], async (err, resultTesis) => {
-        if (err) {
-            console.error("Error al insertar en la tabla Tesis:", err);
-            return res.status(500).json({ message: "Error al subir la tesis", error: err });
-        }
+    const sqlTesis = "INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf) VALUES (5, ?, ?, ?, ?, ?, ?, ?)";
 
-        // Después de insertar la tesis, obtenemos el id de la tesis recién insertada
-        const tesisId = resultTesis.insertId;
-        console.log("Tesis añadida con ID:", tesisId);
-        console.log("asi viene ", idEstudianteInt);
-
-        // Llamar al controlador 'postAlumnoTesisController' directamente
-        try {
-            // Crear el objeto req y res simulados para el controlador
-            const fakeReq = {
-                body: {
-                    id_estudiante: idEstudianteInt,
-                    id_tesis: tesisId,
-                }
-            };
-            const fakeRes = {
-                json: (response) => {
-                    console.log("Respuesta de alumno_tesis:", response);
-                },
-                status: (statusCode) => ({
-                    json: (response) => {
-                        console.log(`Error ${statusCode}:`, response);
-                    }
-                })
-            };
-
-            // Llamar a la función directamente
-            await postAlumnoTesisController(fakeReq, fakeRes);
-
-            // Eliminar archivo temporal después de insertarlo en la base de datos
-            fs.unlinkSync(req.file.path);
-
-            return res.json({ message: "Tesis subida correctamente y autor asociado", tesisId });
-        } catch (error) {
-            console.error("Error al asociar el autor con la tesis:", error);
-            return res.status(500).json({ message: "Error al asociar el autor con la tesis", error });
-        }
-    });
+    try {
+        // Inserta los datos, incluyendo el archivo PDF como BLOB
+        console.log('Datos a insertar:', [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf]);
+        const resultTesis = await db.execute(sqlTesis, [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf]);
+        console.log("Resultado de la inserción en Tesis:", resultTesis);
+    } catch (error) {
+        console.error('Error al insertar el archivo PDF:', error);
+    }
 };
 
 
 
-// Descargar un PDF de una tesis
-export const downloadTesis = (req, res) => {
+export const downloadTesis = async (req, res) => {
     const { id } = req.params;
+    console.log("ID recibido:", id);
+
     const sql = "SELECT archivo_pdf FROM Tesis WHERE id = ?";
-    db.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
-        if (result.length === 0) return res.status(404).json({ message: "Tesis no encontrada" });
+    console.log("Consulta SQL:", sql);
+
+    try {
+        const result = await db.execute(sql, [id]);
+
+        console.log("Resultado de la consulta:", result);
+
+        if (!result || result.rows.length === 0 || !result.rows[0].archivo_pdf) {
+            console.log("No se encontró el archivo PDF o no hay registros para este ID");
+            return res.status(404).json({ message: "Tesis no encontrada o archivo PDF no disponible" });
+        }
+
+        // Convertir ArrayBuffer a Buffer
+        const archivoPdfBuffer = Buffer.from(result.rows[0].archivo_pdf);
+        console.log("Archivo PDF convertido a Buffer:", archivoPdfBuffer);
+
+        if (archivoPdfBuffer.length === 0) {
+            console.log("El archivo PDF está vacío");
+            return res.status(404).json({ message: "Archivo PDF no encontrado" });
+        }
 
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename=tesis_${id}.pdf`);
-        res.send(result[0].archivo_pdf);
-    });
+        console.log("Cabeceras configuradas para la descarga");
+
+        // Enviar el archivo PDF como un Buffer
+        res.end(archivoPdfBuffer);
+        console.log("Archivo PDF enviado correctamente");
+
+    } catch (err) {
+        console.error("Error al descargar el archivo PDF:", err.message);
+        return res.status(500).json({ message: "Error en el servidor", error: err.message });
+    }
 };
+
 
 // Eliminar una tesis
-export const deleteTesis = (req, res) => {
+export const deleteTesis = async (req, res) => {
     const { id } = req.params;
     const sql = "DELETE FROM Tesis WHERE id = ?";
-    db.query(sql, [id], (err, result) => {
-        if (err) return res.status(500).json({ message: "Error al eliminar la tesis", error: err });
+
+    try {
+        const result = await db.execute(sql, [id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Tesis no encontrada" });
+        }
+
         return res.json({ message: "Tesis eliminada correctamente" });
-    });
+    } catch (err) {
+        console.error("Error al eliminar la tesis:", err.message);
+        return res.status(500).json({ message: "Error al eliminar la tesis", error: err.message });
+    }
 };
 
 
 
-export const updateTesis = (req, res) => {
+
+// Actualizar una tesis
+export const updateTesis = async (req, res) => {
     const { id } = req.params;
     const { nombre, fecha, estado } = req.body;
 
@@ -158,18 +183,21 @@ export const updateTesis = (req, res) => {
     query += ` WHERE id = ?`;
     params.push(id);
 
-    console.log("Consulta SQL:", query);  // Verifica la consulta generada
-    console.log("Parámetros:", params);  // Verifica los parámetros pasados
+    try {
+        console.log("Consulta SQL:", query);  // Verifica la consulta generada
+        console.log("Parámetros:", params);  // Verifica los parámetros pasados
 
-    // Ejecuta la consulta
-    db.query(query, params, (err, result) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ message: 'Hubo un error al actualizar la tesis.' });
-        }
+        // Ejecuta la consulta
+        const result = await db.execute(query, params);
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: 'Tesis no encontrada.' });
         }
-        res.status(200).json({ message: 'Tesis actualizada correctamente.' });
-    });
+
+        return res.status(200).json({ message: 'Tesis actualizada correctamente.' });
+
+    } catch (err) {
+        console.error("Error al actualizar la tesis:", err.message);
+        return res.status(500).json({ message: 'Hubo un error al actualizar la tesis.', error: err.message });
+    }
 };

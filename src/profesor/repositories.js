@@ -3,44 +3,54 @@ import db from '../../config/db.js';
 
 export class ProfesorRepository {
 
-    static async getAll() {
-        return new Promise((resolve, reject) => {
-          const sql = "SELECT * FROM Profesor";
-          db.query(sql, (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
+  static async getAll() {
+    try {
+      const result = await db.execute({
+        sql: "SELECT * FROM Profesor",
+      });
+      return result.rows;
+    } catch (err) {
+      console.error('Error en ProfesorRepository.getAll:', err.message);
+      throw err;
     }
+  }
 
-    static async getProfesor(ci) {
-        return new Promise((resolve, reject) => {
-            const sql = "SELECT * FROM Profesor WHERE ci = ?";
-            db.query(sql, [ci], (err, result) => {
-                if (err) return reject(err);
-                resolve(result.length ? result[0] : null);
-            });
-        });
+  static async getProfesor(ci) {
+    try {
+      const result = await db.execute({
+        sql: "SELECT * FROM Profesor WHERE ci = ?",
+        args: [ci],
+      });
+      return result.rows.length ? result.rows[0] : null;
+    } catch (err) {
+      console.error('Error en ProfesorRepository.getProfesor:', err.message);
+      throw err;
     }
+  }
 
-    static async create({ ci, nombre, apellido, email, telefono}) {
-        return new Promise((resolve, reject) => {
-          const sql = "INSERT INTO Profesor (ci, nombre, apellido, email, telefono) VALUES (?, ?, ?,?,?)";
-          db.query(sql, [ci, nombre, apellido, email, telefono], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
+  static async create({ ci, nombre, apellido, email, telefono }) {
+    try {
+      const result = await db.execute({
+        sql: "INSERT INTO Profesor (ci, nombre, apellido, email, telefono) VALUES (?, ?, ?, ?, ?)",
+        args: [ci, nombre, apellido, email, telefono],
+      });
+      return result;
+    } catch (err) {
+      console.error('Error en ProfesorRepository.create:', err.message);
+      throw err;
     }
+  }
 
-    static async delete(ci) {
-        return new Promise((resolve, reject) => {
-          const sql = "DELETE FROM Profesor WHERE ci = ?";
-          db.query(sql, [ci], (err, result) => {
-            if (err) return reject(err);
-            resolve(result);
-          });
-        });
+  static async delete(ci) {
+    try {
+      const result = await db.execute({
+        sql: "DELETE FROM Profesor WHERE ci = ?",
+        args: [ci],
+      });
+      return result;
+    } catch (err) {
+      console.error('Error en ProfesorRepository.delete:', err.message);
+      throw err;
     }
-
+  }
 }
