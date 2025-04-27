@@ -32,10 +32,10 @@ export class AlumnoTesisRepository {
   }
 
 
-  static async create({ id, id_estudiante, id_tesis }) {
+  static async create({id_estudiante, id_tesis }) {
     return new Promise((resolve, reject) => {
-      const sql = 'INSERT INTO Alumno_tesis (id, id_estudiante, id_tesis) VALUES (?, ?, ?)';
-      db.query(sql, [id, id_estudiante, id_tesis], (err, result) => {
+      const sql = 'INSERT INTO Alumno_tesis (id_estudiante, id_tesis) VALUES (?, ?)';
+      db.query(sql, [id_estudiante, id_tesis], (err, result) => {
         if (err) {
           console.error('Error en create:', err.message);
           return reject(err);
