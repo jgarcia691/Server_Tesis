@@ -14,6 +14,19 @@ export class EncargadoRepository {
                 throw err;
             }
     }
+
+    static async getEncargado(ci) {
+        try {
+            const result = await db.execute({
+                sql: 'SELECT * FROM Encargado WHERE ci = ?',
+                args: [ci],
+            });
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error en EncargadoRepository.getEncargado:', err.message);
+            throw err;
+        }
+    }
     
     static async create({ ci, nombre, apellido, telefono, password, email }) {
         try {
