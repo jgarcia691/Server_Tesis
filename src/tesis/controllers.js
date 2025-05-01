@@ -23,11 +23,14 @@ export const getTesis = async (req, res) => {
 
 // Obtener una tesis por ID (con PDF)
 export const getTesisById = async (req, res) => {
-    try {
-        const result = await db.execute({
-            sql: 'SELECT * FROM Tesis',
-        });
 
+    const { id } = req.params;
+    console.log("ID recibido:", id);
+    const sql = "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis WHERE id = ?";
+    console.log("Consulta SQL:", sql);
+
+    try {
+        const result = await db.execute(sql, [id]);
         console.log("Resultado obtenido:", result);
 
         // Ahora debes enviar el resultado por res.json()
@@ -42,7 +45,7 @@ export const getTesisById = async (req, res) => {
 export const getTesisByName = async (req, res) => {
     console.log(req.params);
     const { nombre } = req.params;
-    const sql = "SELECT * FROM Tesis WHERE nombre LIKE ?";
+    const sql = "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis WHERE nombre LIKE ?";
     const searchTerm = `%${nombre}%`; // Añade los comodines %
 
     console.log(`Buscando término:`, searchTerm);
