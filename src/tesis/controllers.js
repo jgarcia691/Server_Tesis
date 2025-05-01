@@ -68,33 +68,76 @@ export const uploadTesis = async (req, res) => {
     console.log("Archivo recibido:", req.file);
     console.log("Cuerpo recibido:", req.body);
 
-    const { nombre, id_estudiante, id_tutor, id_encargado, fecha, id_sede, estado } = req.body;
+    const { id_tesis, nombre, id_estudiante, id_tutor, id_encargado, fecha, id_sede, estado } = req.body;
 
-    const idEstudianteInt = parseInt(id_estudiante, 10); // Convierte id_estudiante a int (base 10)
+    const idTesisInt = parseInt(id_tesis, 10);
+    const idEstudianteInt = parseInt(id_estudiante, 10);
 
-    // Verifica si la conversión fue exitosa
+    // Validaciones básicas
+    if (isNaN(idTesisInt)) {
+        return res.status(400).json({ message: "El ID de la tesis debe ser un número entero válido." });
+    }
     if (isNaN(idEstudianteInt)) {
         return res.status(400).json({ message: "El ID del estudiante debe ser un número entero válido." });
     }
-
     if (!req.file) {
         return res.status(400).json({ message: "El archivo PDF es obligatorio" });
     }
 
+    // Leer el archivo PDF
     const archivo_pdf = fs.readFileSync(req.file.path);
-    console.log('Archivo recibido con tamaño:', archivo_pdf.length);
-    console.log("Archivo leído:", archivo_pdf);
 
-    // Primero, inserta la tesis en la tabla Tesis
-    const sqlTesis = "INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf) VALUES (5, ?, ?, ?, ?, ?, ?, ?)";
+    // Verificar si ya existe una tesis con ese id_tesis
+    const checkSql = "SELECT id FROM Tesis WHERE id = ?";
+    const checkResult = await db.execute(checkSql, [idTesisInt]);
+
+    if (checkResult.rows.length > 0) {
+        fs.unlinkSync(req.file.path); // Borra archivo temporal
+        return res.status(400).json({ message: "Ya existe una tesis con ese ID." });
+    }
+
+    // Insertar la tesis
+    const sqlTesis = `
+        INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
     try {
-        // Inserta los datos, incluyendo el archivo PDF como BLOB
-        console.log('Datos a insertar:', [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf]);
-        const resultTesis = await db.execute(sqlTesis, [id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf]);
-        console.log("Resultado de la inserción en Tesis:", resultTesis);
+        await db.execute(sqlTesis, [idTesisInt, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf]);
+
+        console.log("Tesis añadida con ID:", idTesisInt);
+
+        // Asociar estudiante con tesis en alumno_tesis
+        const fakeReq = {
+            body: {
+                id_estudiante: idEstudianteInt,
+                id_tesis: idTesisInt,
+            }
+        };
+        const fakeRes = {
+            json: (response) => console.log("Respuesta de alumno_tesis:", response),
+            status: (statusCode) => ({
+                json: (response) => console.log(`Error ${statusCode}:`, response)
+            })
+        };
+
+        await postAlumnoTesisController(fakeReq, fakeRes);
+
+        // Eliminar archivo temporal
+        fs.unlinkSync(req.file.path);
+
+        // Responder éxito
+        return res.json({ message: "Tesis subida correctamente y autor asociado", id_tesis: idTesisInt });
+
     } catch (error) {
-        console.error('Error al insertar el archivo PDF:', error);
+        console.error("Error al subir la tesis o asociar el autor:", error);
+
+        // Elimina archivo temporal en caso de error
+        if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+
+        return res.status(500).json({ message: "Error al subir la tesis o asociar el autor", error });
     }
 };
 
