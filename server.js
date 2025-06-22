@@ -11,7 +11,7 @@ import sederoutes from "./src/sede/routes.js";
 import alumno_carreraroutes from "./src/alumno_carrera/routes.js";
 import alumno_tesisroutes from "./src/alumno_tesis/routes.js";
 import carrera_tesisroutes from "./src/carrera_tesis/routes.js";
-
+import loginroute from "./src/auth/routes.js";
 
 const app = express();
 
@@ -30,7 +30,7 @@ app.use("/api/estudiantes", estudiantesroutes);
 app.use("/api/alumno_carrera", alumno_carreraroutes);
 app.use("/api/alumno_tesis", alumno_tesisroutes);
 app.use("/api/carrera_tesis", carrera_tesisroutes);
-
+app.use("/api/login", loginroute);
 
 
 const PORT = process.env.PORT || 8080;
