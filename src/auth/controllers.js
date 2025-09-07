@@ -1,6 +1,11 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import LoginService from "./services.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 

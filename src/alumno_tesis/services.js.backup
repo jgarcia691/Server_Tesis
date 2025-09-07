@@ -1,45 +1,54 @@
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // services.js
 
-import { CarreraTesisRepository } from "./repositories.js";
+import { AlumnoTesisRepository } from "./repositories.js";
 
-export class CarreraTesisService {
+export class AlumnoTesisService {
   static async getAll() {
     try {
-      console.log("Obteniendo todos los registros de Carrera_tesis...");
-      const data = await CarreraTesisRepository.getAll();
+      console.log("Obteniendo todos los registros de Alumno_tesis...");
+      const data = await AlumnoTesisRepository.getAll();
       console.log("Registros obtenidos:", data);
       return { status: "success", data };
     } catch (error) {
       console.error("Error al obtener registros:", error.message);
-      throw new Error("No se pudieron obtener los registros de Carrera_tesis.");
+      throw new Error("No se pudieron obtener los registros de Alumno_tesis.");
+    }
+  }
+
+  static async getById(id) {
+    try {
+      console.log(`Buscando Alumno_tesis con id: ${id}`);
+      const data = await AlumnoTesisRepository.getById(id);
+
+      if (!data || data.length === 0) {
+        throw new Error("No se encontró el registro con ese id");
+      }
+
+      return { status: "success", data };
+    } catch (error) {
+      console.error("Error al obtener registro por id:", error.message);
+      throw new Error("No se pudo obtener el registro: " + error.message);
     }
   }
 
   static async create(data) {
     try {
-      console.log("Creando nuevo registro en Carrera_tesis con datos:", data);
+      console.log("Creando nuevo registro en Alumno_tesis con datos:", data);
 
-      if (!data.id || !data.id_carrera || !data.id_tesis) {
+      if (!data.id_estudiante || !data.id_tesis) {
         throw new Error(
-          "Todos los campos son obligatorios: id, id_carrera, id_tesis",
+          "Todos los campos son obligatorios: id_estudiante, id_tesis",
         );
       }
 
       if (
-        typeof data.id !== "number" ||
-        typeof data.id_carrera !== "number" ||
+        typeof data.id_estudiante !== "number" ||
         typeof data.id_tesis !== "number"
       ) {
         throw new Error("Todos los campos deben ser números.");
       }
 
-      const result = await CarreraTesisRepository.create(data);
+      const result = await AlumnoTesisRepository.create(data);
       console.log("Registro creado exitosamente:", result);
       return {
         status: "success",
@@ -59,7 +68,7 @@ export class CarreraTesisService {
         throw new Error("El campo id es obligatorio y debe ser un número.");
       }
 
-      const result = await CarreraTesisRepository.delete(id);
+      const result = await AlumnoTesisRepository.delete(id);
       console.log("Registro eliminado exitosamente:", result);
       return {
         status: "success",

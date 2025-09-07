@@ -1,6 +1,14 @@
 import express from "express";
 import cors from "cors";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+import { paths } from "./config/paths.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Importar rutas usando rutas absolutas
 import tesisRoutes from "./src/tesis/routes.js";
 import routesEncargado from "./src/encargado/routes.js";
 import routesCarrera from "./src/carrera/routes.js";
