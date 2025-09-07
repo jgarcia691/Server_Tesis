@@ -1,17 +1,16 @@
 import db from "../../config/db.js";
 
 export class JuradoRepository {
-
   static async getJurado(id_tesis) {
     try {
-      console.log('Buscando jurado para tesis:', id_tesis);
+      console.log("Buscando jurado para tesis:", id_tesis);
       const result = await db.execute({
         sql: "SELECT * FROM jurado WHERE id_tesis = ?",
         args: [id_tesis],
       });
       return result.rows.length ? result.rows[0] : null;
     } catch (err) {
-      console.error('Error en JuradoRepository.getJurado:', err.message);
+      console.error("Error en JuradoRepository.getJurado:", err.message);
       throw err;
     }
   }
@@ -24,7 +23,7 @@ export class JuradoRepository {
       });
       return result;
     } catch (err) {
-      console.error('Error en JuradoRepository.create:', err.message);
+      console.error("Error en JuradoRepository.create:", err.message);
       throw err;
     }
   }
@@ -38,9 +37,8 @@ export class JuradoRepository {
       });
       return result;
     } catch (err) {
-      console.error('Error en JuradoRepository.delete:', err.message);
+      console.error("Error en JuradoRepository.delete:", err.message);
       throw err;
     }
   }
-
 }

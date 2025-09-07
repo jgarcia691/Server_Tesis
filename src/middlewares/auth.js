@@ -1,17 +1,17 @@
-import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
 dotenv.config();
 
 export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
+  const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
-    return res.status(401).json({ message: 'Token no proporcionado' });
+    return res.status(401).json({ message: "Token no proporcionado" });
   }
 
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(403).json({ message: 'Formato de token inválido' });
+    return res.status(403).json({ message: "Formato de token inválido" });
   }
 
   try {
@@ -19,6 +19,6 @@ export const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ message: 'Token inválido o expirado' });
+    return res.status(403).json({ message: "Token inválido o expirado" });
   }
 };

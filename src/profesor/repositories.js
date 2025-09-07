@@ -1,8 +1,6 @@
-import db from '../../config/db.js';
-
+import db from "../../config/db.js";
 
 export class ProfesorRepository {
-
   static async getAll() {
     try {
       const result = await db.execute({
@@ -10,7 +8,7 @@ export class ProfesorRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error('Error en ProfesorRepository.getAll:', err.message);
+      console.error("Error en ProfesorRepository.getAll:", err.message);
       throw err;
     }
   }
@@ -23,7 +21,7 @@ export class ProfesorRepository {
       });
       return result.rows.length ? result.rows[0] : null;
     } catch (err) {
-      console.error('Error en ProfesorRepository.getProfesor:', err.message);
+      console.error("Error en ProfesorRepository.getProfesor:", err.message);
       throw err;
     }
   }
@@ -36,7 +34,7 @@ export class ProfesorRepository {
       });
       return result;
     } catch (err) {
-      console.error('Error en ProfesorRepository.create:', err.message);
+      console.error("Error en ProfesorRepository.create:", err.message);
       throw err;
     }
   }
@@ -49,7 +47,7 @@ export class ProfesorRepository {
       });
       return result;
     } catch (err) {
-      console.error('Error en ProfesorRepository.delete:', err.message);
+      console.error("Error en ProfesorRepository.delete:", err.message);
       throw err;
     }
   }

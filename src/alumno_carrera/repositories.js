@@ -1,15 +1,14 @@
-import db from '../../config/db.js';
+import db from "../../config/db.js";
 
 export class AlumnoCarreraRepository {
-
   static async getAll() {
     try {
       const result = await db.execute({
-        sql: 'SELECT * FROM Alumno_carrera',
+        sql: "SELECT * FROM Alumno_carrera",
       });
       return result.rows;
     } catch (err) {
-      console.error('Error en getAll:', err.message);
+      console.error("Error en getAll:", err.message);
       throw err;
     }
   }
@@ -17,12 +16,12 @@ export class AlumnoCarreraRepository {
   static async getByCodigo(codigo) {
     try {
       const result = await db.execute({
-        sql: 'SELECT * FROM Alumno_carrera WHERE codigo = ?',
+        sql: "SELECT * FROM Alumno_carrera WHERE codigo = ?",
         args: [codigo],
       });
       return result.rows;
     } catch (err) {
-      console.error('Error en getByCodigo:', err.message);
+      console.error("Error en getByCodigo:", err.message);
       throw err;
     }
   }
@@ -38,7 +37,7 @@ export class AlumnoCarreraRepository {
       });
       return result;
     } catch (err) {
-      console.error('Error en create:', err.message);
+      console.error("Error en create:", err.message);
       throw err;
     }
   }
@@ -46,14 +45,13 @@ export class AlumnoCarreraRepository {
   static async delete(codigo) {
     try {
       const result = await db.execute({
-        sql: 'DELETE FROM Alumno_carrera WHERE codigo = ?',
+        sql: "DELETE FROM Alumno_carrera WHERE codigo = ?",
         args: [codigo],
       });
       return result;
     } catch (err) {
-      console.error('Error en delete:', err.message);
+      console.error("Error en delete:", err.message);
       throw err;
     }
   }
-
 }

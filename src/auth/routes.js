@@ -1,9 +1,8 @@
-import express from 'express';
-import { postlogincontroller  } from './controllers.js';
+import express from "express";
+import { postlogincontroller } from "./controllers.js";
 
 const router = express.Router();
 
-router.post('/', postlogincontroller);
-
+router.post("/", postlogincontroller);
 
 export default router;

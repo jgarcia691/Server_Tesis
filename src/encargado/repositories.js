@@ -1,4 +1,4 @@
-import db from '../../config/db.js';
+import db from "../../config/db.js";
 
 export class EncargadoRepository {
   static async getAll() {
@@ -7,7 +7,7 @@ export class EncargadoRepository {
       const result = await db.execute(sql);
       return result.rows; // devuelve solo los datos
     } catch (err) {
-      console.error('Error en getAll:', err.message);
+      console.error("Error en getAll:", err.message);
       throw err;
     }
   }
@@ -15,17 +15,25 @@ export class EncargadoRepository {
   static async getEncargado(ci) {
     try {
       const result = await db.execute({
-        sql: 'SELECT * FROM Encargado WHERE ci = ?',
+        sql: "SELECT * FROM Encargado WHERE ci = ?",
         args: [ci],
       });
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (err) {
-      console.error('Error en getEncargado:', err.message);
+      console.error("Error en getEncargado:", err.message);
       throw err;
     }
   }
 
-  static async create({ ci, nombre, apellido, telefono, password, email, id_sede }) {
+  static async create({
+    ci,
+    nombre,
+    apellido,
+    telefono,
+    password,
+    email,
+    id_sede,
+  }) {
     try {
       const sql = `
         INSERT INTO Encargado (ci, nombre, apellido, telefono, password, email, id_sede)
@@ -38,12 +46,15 @@ export class EncargadoRepository {
       });
       return result.rows[0]; // devuelve el nuevo encargado insertado
     } catch (err) {
-      console.error('Error en create:', err.message);
+      console.error("Error en create:", err.message);
       throw err;
     }
   }
 
-  static async update(ci, { nombre, apellido, telefono, password, email, id_sede }) {
+  static async update(
+    ci,
+    { nombre, apellido, telefono, password, email, id_sede },
+  ) {
     try {
       const sql = `
         UPDATE Encargado
@@ -57,7 +68,7 @@ export class EncargadoRepository {
       });
       return result.rows[0]; // devuelve el encargado actualizado
     } catch (err) {
-      console.error('Error en update:', err.message);
+      console.error("Error en update:", err.message);
       throw err;
     }
   }
@@ -71,7 +82,7 @@ export class EncargadoRepository {
       });
       return result.rows[0] || null; // devuelve el encargado eliminado o null
     } catch (err) {
-      console.error('Error en delete:', err.message);
+      console.error("Error en delete:", err.message);
       throw err;
     }
   }
