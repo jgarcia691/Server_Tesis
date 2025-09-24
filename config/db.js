@@ -1,5 +1,7 @@
 import { createClient } from "@libsql/client";
-import "dotenv/config"; // Importa dotenv para cargar las variables
+import { loadEnv } from "../config/load_env.js";
+
+loadEnv();
 
 const db = createClient({
   url: process.env.TURSO_DB_URL,

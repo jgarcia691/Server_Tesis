@@ -3,4 +3,4 @@ build/
 .env
 *.log
 Thumbs.db
-.DS_Store
+.DS_Store.env

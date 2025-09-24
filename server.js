@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { paths } from "./config/paths.js";
+import { initDb } from "./config/initDb.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,16 @@ app.use("/api/carrera_tesis", carrera_tesisroutes);
 app.use("/api/login", loginroute);
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
+
+(async () => {
+  try {
+    await initDb();
+    console.log("Base de datos inicializada.");
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("Error inicializando la base de datos:", err.message);
+    process.exit(1);
+  }
+})();

@@ -1,0 +1,238 @@
+{
+  "info": {
+    "name": "Server_Tesis API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "e5fd5e1f-7a9a-4df0-bf72-collection"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "Sede",
+      "item": [
+        {
+          "name": "Listar sedes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sede/" }
+        },
+        {
+          "name": "Obtener sede por id",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/sede/search/1" }
+        },
+        {
+          "name": "Crear sede",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1,\n  \"nombre\": \"Sede Central\",\n  \"Direccion\": \"Av. Principal\",\n  \"telefono\": \"000-000\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sede/"
+          }
+        },
+        {
+          "name": "Eliminar sede",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/sede/1" }
+        }
+      ]
+    },
+    {
+      "name": "Carrera",
+      "item": [
+        { "name": "Listar carreras", "request": { "method": "GET", "url": "{{baseUrl}}/api/carrera/" } },
+        { "name": "Obtener carrera por código", "request": { "method": "GET", "url": "{{baseUrl}}/api/carrera/100" } },
+        {
+          "name": "Crear carrera",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"codigo\": 100,\n  \"nombre\": \"Ingeniería\",\n  \"campo\": \"Sistemas\"\n}" },
+            "url": "{{baseUrl}}/api/carrera/"
+          }
+        },
+        { "name": "Eliminar carrera", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/carrera/100" } }
+      ]
+    },
+    {
+      "name": "Profesor",
+      "item": [
+        { "name": "Listar profesores", "request": { "method": "GET", "url": "{{baseUrl}}/api/profesor/" } },
+        { "name": "Obtener profesor por CI", "request": { "method": "GET", "url": "{{baseUrl}}/api/profesor/123" } },
+        {
+          "name": "Crear profesor",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"ci\": 123,\n  \"nombre\": \"Juan\",\n  \"apellido\": \"Pérez\",\n  \"email\": \"juan@example.com\",\n  \"telefono\": \"555-111\"\n}" },
+            "url": "{{baseUrl}}/api/profesor/"
+          }
+        },
+        { "name": "Eliminar profesor", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/profesor/123" } }
+      ]
+    },
+    {
+      "name": "Encargado",
+      "item": [
+        { "name": "Listar encargados", "request": { "method": "GET", "url": "{{baseUrl}}/api/encargado/" } },
+        { "name": "Obtener encargado por CI", "request": { "method": "GET", "url": "{{baseUrl}}/api/encargado/200" } },
+        {
+          "name": "Crear encargado",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"ci\": 200,\n  \"nombre\": \"Ana\",\n  \"apellido\": \"López\",\n  \"telefono\": \"555-222\",\n  \"password\": \"secreta\",\n  \"email\": \"ana@example.com\",\n  \"id_sede\": 1\n}" },
+            "url": "{{baseUrl}}/api/encargado/"
+          }
+        },
+        {
+          "name": "Actualizar encargado",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Ana María\",\n  \"apellido\": \"López\",\n  \"telefono\": \"555-333\",\n  \"password\": \"nueva\",\n  \"email\": \"ana.maria@example.com\",\n  \"id_sede\": 1\n}" },
+            "url": "{{baseUrl}}/api/encargado/200"
+          }
+        },
+        { "name": "Eliminar encargado", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/encargado/200" } }
+      ]
+    },
+    {
+      "name": "Estudiantes",
+      "item": [
+        { "name": "Listar estudiantes", "request": { "method": "GET", "url": "{{baseUrl}}/api/estudiantes/" } },
+        { "name": "Obtener estudiante por CI", "request": { "method": "GET", "url": "{{baseUrl}}/api/estudiantes/ci/300" } },
+        {
+          "name": "Crear estudiante",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"ci\": 300,\n  \"nombre\": \"Luis\",\n  \"apellido\": \"Gómez\",\n  \"email\": \"luis@example.com\",\n  \"telefono\": \"555-444\"\n}" },
+            "url": "{{baseUrl}}/api/estudiantes/"
+          }
+        },
+        {
+          "name": "Actualizar estudiante",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Luis Alberto\",\n  \"apellido\": \"Gómez\",\n  \"email\": \"luis.alberto@example.com\",\n  \"telefono\": \"555-555\"\n}" },
+            "url": "{{baseUrl}}/api/estudiantes/300"
+          }
+        },
+        { "name": "Eliminar estudiante", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/estudiantes/300" } }
+      ]
+    },
+    {
+      "name": "Tesis",
+      "item": [
+        { "name": "Listar tesis", "request": { "method": "GET", "url": "{{baseUrl}}/api/tesis" } },
+        { "name": "Buscar tesis por nombre", "request": { "method": "GET", "url": "{{baseUrl}}/api/tesis/cadena/proyecto" } },
+        { "name": "Obtener tesis por ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/tesis/10" } },
+        {
+          "name": "Subir tesis con PDF",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/tesis",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "id_tesis", "value": "10", "type": "text" },
+                { "key": "nombre", "value": "Tesis de ejemplo", "type": "text" },
+                { "key": "id_estudiante", "value": "300", "type": "text" },
+                { "key": "id_tutor", "value": "123", "type": "text" },
+                { "key": "id_encargado", "value": "200", "type": "text" },
+                { "key": "fecha", "value": "2024-01-01", "type": "text" },
+                { "key": "id_sede", "value": "1", "type": "text" },
+                { "key": "estado", "value": "activo", "type": "text" },
+                { "key": "archivo_pdf", "type": "file", "src": "/ruta/a/archivo.pdf" }
+              ]
+            }
+          }
+        },
+        { "name": "Descargar PDF de tesis", "request": { "method": "GET", "url": "{{baseUrl}}/api/tesis/10/download" } },
+        { "name": "Eliminar tesis", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/tesis/10" } },
+        {
+          "name": "Actualizar tesis (con PDF opcional)",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/tesis/10",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "nombre", "value": "Nuevo título", "type": "text" },
+                { "key": "fecha", "value": "2024-02-01", "type": "text" },
+                { "key": "estado", "value": "revisado", "type": "text" },
+                { "key": "archivo_pdf", "type": "file", "src": "/ruta/a/nuevo.pdf" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alumno_carrera",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "url": "{{baseUrl}}/api/alumno_carrera/" } },
+        { "name": "Obtener por código", "request": { "method": "GET", "url": "{{baseUrl}}/api/alumno_carrera/500" } },
+        {
+          "name": "Crear relación alumno-carrera",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"codigo\": 500,\n  \"id_estudiante\": 300,\n  \"id_carrera\": 100\n}" },
+            "url": "{{baseUrl}}/api/alumno_carrera/"
+          }
+        },
+        { "name": "Eliminar relación", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/alumno_carrera/500" } }
+      ]
+    },
+    {
+      "name": "Alumno_tesis",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "url": "{{baseUrl}}/api/alumno_tesis/" } },
+        { "name": "Obtener por ID", "request": { "method": "GET", "url": "{{baseUrl}}/api/alumno_tesis/700" } },
+        {
+          "name": "Crear relación alumno-tesis",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id_estudiante\": 300,\n  \"id_tesis\": 10\n}" },
+            "url": "{{baseUrl}}/api/alumno_tesis/"
+          }
+        },
+        { "name": "Eliminar relación", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/alumno_tesis/700" } }
+      ]
+    },
+    {
+      "name": "Carrera_tesis",
+      "item": [
+        { "name": "Listar", "request": { "method": "GET", "url": "{{baseUrl}}/api/carrera_tesis/" } },
+        {
+          "name": "Crear relación carrera-tesis",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"id\": 900,\n  \"id_carrera\": 100,\n  \"id_tesis\": 10\n}" },
+            "url": "{{baseUrl}}/api/carrera_tesis/"
+          }
+        },
+        { "name": "Eliminar relación", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/carrera_tesis/900" } }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (Encargado por email)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"ana@example.com\",\n  \"password\": \"secreta\"\n}" },
+            "url": "{{baseUrl}}/api/login/"
+          }
+        }
+      ]
+    }
+  ]
+} 
