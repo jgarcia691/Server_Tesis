@@ -44,16 +44,19 @@ export const postcarreracontroller = async (req, res) => {
       typeof nombre !== "string" ||
       typeof campo !== "string"
     ) {
-      return res
-        .status(400)
-        .json({
-          message: "codigo debe ser números, nombre y campo deben ser cadenas",
-        });
+      return res.status(400).json({
+        message: "codigo debe ser números, nombre y campo deben ser cadenas",
+      });
     }
-    await CarreraService.create({ codigo, nombre, campo });
-    res.status(201).json({ message: "carrera creado correctamente" });
+    const result = await CarreraService.create({ codigo, nombre, campo });
+    res.status(201).json(result);
   } catch (error) {
     console.error("Error:", error);
+    if (
+      error.message === "Ya existe una carrera con el código proporcionado."
+    ) {
+      return res.status(409).json({ message: error.message });
+    }
     res
       .status(500)
       .json({ message: "Error al crear carrera", error: error.message });

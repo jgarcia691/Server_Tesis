@@ -5,6 +5,7 @@ import db from "../../config/db.js";
 import fs from "fs";
 
 import { postAlumnoTesisController } from "../alumno_tesis/controllers.js";
+import { uploadBufferToTerabox } from "../../config/terabox.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,26 +109,39 @@ export const uploadTesis = async (req, res) => {
         message: "El ID del estudiante debe ser un número entero válido.",
       });
   }
-  if (!req.file) {
+  if (!req.file || !req.file.buffer) {
     return res.status(400).json({ message: "El archivo PDF es obligatorio" });
   }
 
-  // Leer el archivo PDF
-  const archivo_pdf = fs.readFileSync(req.file.path);
+  // Leer el archivo PDF desde memoria
+  const archivo_pdf = Buffer.from(req.file.buffer);
 
   // Verificar si ya existe una tesis con ese id_tesis
   const checkSql = "SELECT id FROM Tesis WHERE id = ?";
   const checkResult = await db.execute(checkSql, [idTesisInt]);
 
   if (checkResult.rows.length > 0) {
-    fs.unlinkSync(req.file.path); // Borra archivo temporal
     return res.status(400).json({ message: "Ya existe una tesis con ese ID." });
   }
 
-  // Insertar la tesis
+  // Subir a Terabox y obtener detalles
+  let archivoUrl = null;
+  let teraboxFsId = null;
+  try {
+    const details = await uploadBufferToTerabox(archivo_pdf, req.file.originalname, "/tesis");
+    console.log("Detalles de la tesis:", details);
+    // La librería documenta fileDetails; asumimos que incluye 'fs_id' y posiblemente 'dlink'
+    teraboxFsId = details?.fs_id || null;
+    archivoUrl = details?.dlink || details?.link || null; // fallback si expone link directo
+  } catch (e) {
+    console.error("Error subiendo a Terabox:", e.message);
+    return res.status(500).json({ message: "Error subiendo a almacenamiento", error: e.message });
+  }
+
+  // Insertar la tesis (guardando URL en vez de BLOB)
   const sqlTesis = `
-        INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_pdf)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
   try {
@@ -139,7 +153,8 @@ export const uploadTesis = async (req, res) => {
       nombre,
       fecha,
       estado,
-      archivo_pdf,
+      archivoUrl,
+      teraboxFsId,
     ]);
 
     console.log("Tesis añadida con ID:", idTesisInt);
@@ -160,21 +175,15 @@ export const uploadTesis = async (req, res) => {
 
     await postAlumnoTesisController(fakeReq, fakeRes);
 
-    // Eliminar archivo temporal
-    fs.unlinkSync(req.file.path);
-
     // Responder éxito
     return res.json({
       message: "Tesis subida correctamente y autor asociado",
       id_tesis: idTesisInt,
+      archivo_url: archivoUrl,
+      terabox_fs_id: teraboxFsId,
     });
   } catch (error) {
     console.error("Error al subir la tesis o asociar el autor:", error);
-
-    // Elimina archivo temporal en caso de error
-    if (fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
 
     return res
       .status(500)
@@ -186,47 +195,32 @@ export const downloadTesis = async (req, res) => {
   const { id } = req.params;
   console.log("ID recibido:", id);
 
-  const sql = "SELECT archivo_pdf FROM Tesis WHERE id = ?";
-  console.log("Consulta SQL:", sql);
-
+  // Primero intenta con URL
   try {
-    const result = await db.execute(sql, [id]);
+    const result = await db.execute("SELECT archivo_url, archivo_pdf FROM Tesis WHERE id = ?", [id]);
+    const row = result?.rows?.[0];
+    if (!row) return res.status(404).json({ message: "Tesis no encontrada" });
 
-    console.log("Resultado de la consulta:", result);
-
-    if (!result || result.rows.length === 0 || !result.rows[0].archivo_pdf) {
-      console.log(
-        "No se encontró el archivo PDF o no hay registros para este ID",
-      );
-      return res
-        .status(404)
-        .json({ message: "Tesis no encontrada o archivo PDF no disponible" });
+    if (row.archivo_url) {
+      // Redirigir a URL (pública o presignada)
+      return res.redirect(row.archivo_url);
     }
 
-    // Convertir ArrayBuffer a Buffer
-    const archivoPdfBuffer = Buffer.from(result.rows[0].archivo_pdf);
-    console.log("Archivo PDF convertido a Buffer:", archivoPdfBuffer);
-
-    if (archivoPdfBuffer.length === 0) {
-      console.log("El archivo PDF está vacío");
-      return res.status(404).json({ message: "Archivo PDF no encontrado" });
+    // Fallback: si existe BLOB (para datos antiguos)
+    if (row.archivo_pdf) {
+      const archivoPdfBuffer = Buffer.from(row.archivo_pdf);
+      if (archivoPdfBuffer.length === 0) {
+        return res.status(404).json({ message: "Archivo PDF no encontrado" });
+      }
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename=tesis_${id}.pdf`);
+      return res.end(archivoPdfBuffer);
     }
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=tesis_${id}.pdf`,
-    );
-    console.log("Cabeceras configuradas para la descarga");
-
-    // Enviar el archivo PDF como un Buffer
-    res.end(archivoPdfBuffer);
-    console.log("Archivo PDF enviado correctamente");
+    return res.status(404).json({ message: "Archivo no disponible" });
   } catch (err) {
-    console.error("Error al descargar el archivo PDF:", err.message);
-    return res
-      .status(500)
-      .json({ message: "Error en el servidor", error: err.message });
+    console.error("Error al descargar el archivo:", err.message);
+    return res.status(500).json({ message: "Error en el servidor", error: err.message });
   }
 };
 
@@ -257,7 +251,7 @@ export const updateTesis = async (req, res) => {
   const { nombre, fecha, estado } = req.body;
 
   // Verifica si el archivo está presente
-  const archivoPdf = req.file ? fs.readFileSync(req.file.path) : null;
+  const archivoPdf = req.file && req.file.buffer ? Buffer.from(req.file.buffer) : null;
 
   // Construye la consulta SQL
   let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?`;
@@ -265,7 +259,7 @@ export const updateTesis = async (req, res) => {
 
   if (archivoPdf) {
     query += `, archivo_pdf = ?`;
-    params.push(archivoPdf); // El archivo debe ser leído como buffer
+    params.push(archivoPdf);
   }
 
   query += ` WHERE id = ?`;

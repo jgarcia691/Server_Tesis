@@ -36,7 +36,7 @@ export class CarreraService {
       console.log("Creando una nueva carrera con los datos:", data);
       if (!data.codigo || !data.nombre || !data.campo) {
         throw new Error(
-          "Todos los campos son obligatorios: codigo, nombre, campo",
+          "Todos los campos son obligatorios: codigo, nombre, campo"
         );
       }
       if (
@@ -45,6 +45,13 @@ export class CarreraService {
         typeof data.campo !== "string"
       ) {
         throw new Error("codigo debe ser numero, campo y nombre cadenas.");
+      }
+
+      const existingCarreraResult = await CarreraService.getCarrera(
+        data.codigo
+      );
+      if (existingCarreraResult.data) {
+        throw new Error("Ya existe una carrera con el código proporcionado.");
       }
       const resultado = await CarreraRepository.create(data);
       console.log("carrera creado exitosamente:", resultado);
@@ -78,7 +85,7 @@ export class CarreraService {
     } catch (error) {
       console.error(
         `Error al eliminar carrera con Codigo ${codigo}:`,
-        error.message,
+        error.message
       );
       throw new Error("No se pudo eliminar la carrera: " + error.message);
     }

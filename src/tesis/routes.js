@@ -12,17 +12,12 @@ import {
 
 const router = express.Router();
 
-// Configuración de `multer` para la subida de archivos
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
+// Configuración de `multer` para la subida de archivos (en memoria para Vercel)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
-  limits: { fileSize: 64 * 1024 * 1024 }, // 10 MB de tamaño máximo
+  limits: { fileSize: 64 * 1024 * 1024 }, // 64 MB
 });
 
 // Definición de rutas

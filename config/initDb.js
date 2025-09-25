@@ -70,6 +70,8 @@ export async function initDb() {
       fecha TEXT NOT NULL,
       estado TEXT NOT NULL,
       archivo_pdf BLOB,
+      archivo_url TEXT,
+      terabox_fs_id TEXT,
       FOREIGN KEY (id_encargado) REFERENCES Encargado(ci),
       FOREIGN KEY (id_sede) REFERENCES Sede(id),
       FOREIGN KEY (id_tutor) REFERENCES Profesor(ci)
