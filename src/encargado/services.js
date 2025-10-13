@@ -42,33 +42,27 @@ export class EncargadoService {
         !data.nombre ||
         !data.apellido ||
         !data.telefono ||
-        !data.password ||
         !data.email ||
         !data.id_sede
       ) {
         throw new Error(
-          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email",
+          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, email, id_sede",
         );
       }
       if (
         typeof data.ci !== "number" ||
         typeof data.telefono !== "string" ||
-        typeof data.password !== "string" ||
         typeof data.nombre !== "string" ||
         typeof data.apellido !== "string" ||
         typeof data.email !== "string" ||
         typeof data.id_sede !== "number"
       ) {
         throw new Error(
-          "ci, telefono y sede deben ser números; nombre, apellido, email y password deben ser cadenas.",
+          "ci y sede deben ser números; nombre, apellido, email y telefono deben ser cadenas.",
         );
       }
 
-      // 🔐 Hashear contraseña
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      const encargadoData = { ...data, password: hashedPassword };
-
-      const resultado = await EncargadoRepository.create(encargadoData);
+      const resultado = await EncargadoRepository.create(data);
       console.log("Encargado creado exitosamente:", resultado);
       return {
         status: "success",

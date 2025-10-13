@@ -41,7 +41,6 @@ export async function initDb() {
       nombre TEXT NOT NULL,
       apellido TEXT NOT NULL,
       telefono TEXT NOT NULL,
-      password TEXT NOT NULL,
       email TEXT NOT NULL,
       id_sede INTEGER NOT NULL,
       FOREIGN KEY (id_sede) REFERENCES Sede(id)
@@ -56,6 +55,16 @@ export async function initDb() {
       apellido TEXT NOT NULL,
       email TEXT NOT NULL,
       telefono TEXT NOT NULL
+    );
+  `);
+
+  // Users
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS Users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_ci INTEGER NOT NULL UNIQUE,
+      user_type TEXT NOT NULL, -- 'encargado', 'profesor', or 'estudiante'
+      password TEXT NOT NULL
     );
   `);
 
@@ -121,4 +130,4 @@ export async function initDb() {
       FOREIGN KEY (id_tesis) REFERENCES Tesis(id)
     );
   `);
-} 
+}

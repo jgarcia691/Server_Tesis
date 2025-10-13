@@ -32,6 +32,21 @@ const LoginService = {
       throw error;
     }
   },
+
+  async register(user_ci, user_type, password) {
+    try {
+      const existingUser = await LoginRepository.findByCi(user_ci);
+      if (existingUser) {
+        throw new Error("El usuario ya existe");
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      return await LoginRepository.createUser(user_ci, user_type, hashedPassword);
+    } catch (error) {
+      console.error("💥 Error en LoginService.register:", error);
+      throw error;
+    }
+  }
 };
 
 export default LoginService;

@@ -36,19 +36,18 @@ export class EncargadoRepository {
     nombre,
     apellido,
     telefono,
-    password,
     email,
     id_sede,
   }) {
     try {
       const sql = `
-        INSERT INTO Encargado (ci, nombre, apellido, telefono, password, email, id_sede)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO Encargado (ci, nombre, apellido, telefono, email, id_sede)
+        VALUES (?, ?, ?, ?, ?, ?)
         RETURNING *;
       `;
       const result = await db.execute({
         sql,
-        args: [ci, nombre, apellido, telefono, password, email, id_sede],
+        args: [ci, nombre, apellido, telefono, email, id_sede],
       });
       return result.rows[0]; // devuelve el nuevo encargado insertado
     } catch (err) {

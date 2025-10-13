@@ -6,6 +6,12 @@ import fs from "fs";
 
 import { postAlumnoTesisController } from "../alumno_tesis/controllers.js";
 import { uploadBufferToTerabox } from "../../config/terabox.js";
+import { EstudianteService } from "../estudiantes/services.js";
+import { EncargadoService } from "../encargado/services.js";
+import { ProfesorService } from "../profesor/Services.js";
+import { EstudianteRepository } from "../estudiantes/repositories.js";
+import { ProfesorRepository } from "../profesor/repositories.js";
+import { EncargadoRepository } from "../encargado/repositories.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,9 +23,7 @@ export const getTesis = async (req, res) => {
     });
 
     console.log("Resultado obtenido:", result);
-
-    // Ahora debes enviar el resultado por res.json()
-    res.json(result.rows); // <- así responde correctamente al navegador
+    res.json(result.rows);
   } catch (err) {
     console.error("Error en getTesis:", err.message);
     res
@@ -40,8 +44,7 @@ export const getTesisById = async (req, res) => {
     const result = await db.execute(sql, [id]);
     console.log("Resultado obtenido:", result);
 
-    // Ahora debes enviar el resultado por res.json()
-    res.json(result.rows); // <- así responde correctamente al navegador
+    res.json(result.rows);
   } catch (err) {
     console.error("Error en getTesisById:", err.message);
     res
@@ -79,74 +82,145 @@ export const getTesisByName = async (req, res) => {
 
 // Subir una nueva tesis
 export const uploadTesis = async (req, res) => {
-  console.log("Archivo recibido:", req.file);
-  console.log("Cuerpo recibido:", req.body);
+  console.log("DEBUG: Iniciando uploadTesis");
+  console.log("DEBUG: req.body:", req.body);
+  console.log("DEBUG: req.file:", req.file);
 
-  const {
-    id_tesis,
+  let {
     nombre,
     id_estudiante,
     id_tutor,
     id_encargado,
     fecha,
-    id_sede,
     estado,
+    nuevo_autor: new_estudiante_data,
+    nuevo_tutor: new_tutor_data,
+    nuevo_encargado: new_encargado_data,
   } = req.body;
 
-  const idTesisInt = parseInt(id_tesis, 10);
-  const idEstudianteInt = parseInt(id_estudiante, 10);
-
-  // Validaciones básicas
-  if (isNaN(idTesisInt)) {
-    return res
-      .status(400)
-      .json({ message: "El ID de la tesis debe ser un número entero válido." });
+  const id_sede_str = req.body.id_sede;
+  if (!id_sede_str) {
+    console.error("ERROR: El campo id_sede es obligatorio.");
+    return res.status(400).json({ message: "El campo id_sede es obligatorio." });
   }
-  if (isNaN(idEstudianteInt)) {
-    return res
-      .status(400)
-      .json({
+  const id_sede = parseInt(id_sede_str, 10);
+  if (isNaN(id_sede)) {
+    console.error("ERROR: El campo id_sede debe ser un número.");
+    return res.status(400).json({ message: "El campo id_sede debe ser un número." });
+  }
+
+  try {
+    if (id_estudiante === "new") {
+      console.log("DEBUG: Creando nuevo estudiante");
+      const estudianteData = JSON.parse(new_estudiante_data);
+      console.log("DEBUG: estudianteData (parsed):", estudianteData);
+      estudianteData.ci = parseInt(estudianteData.cedula, 10);
+      delete estudianteData.cedula;
+      const existingEstudiante = await EstudianteRepository.getByCi(estudianteData.ci);
+      if (existingEstudiante) {
+        id_estudiante = existingEstudiante.ci;
+        console.log(`DEBUG: Estudiante existente encontrado con CI: ${id_estudiante}`);
+      } else {
+        if (!estudianteData.email) {
+          estudianteData.email = `${estudianteData.ci}@placeholder.com`;
+        }
+        if (!estudianteData.telefono) {
+          estudianteData.telefono = "0000000";
+        }
+        await EstudianteService.create(estudianteData);
+        id_estudiante = estudianteData.ci;
+        console.log(`DEBUG: Nuevo estudiante creado con CI: ${id_estudiante}`);
+      }
+    }
+
+    if (id_tutor === "new") {
+      console.log("DEBUG: Creando nuevo tutor");
+      const tutorData = JSON.parse(new_tutor_data);
+      console.log("DEBUG: tutorData (parsed):", tutorData);
+      tutorData.ci = parseInt(tutorData.cedula, 10);
+      delete tutorData.cedula;
+      const existingTutor = await ProfesorRepository.getProfesor(tutorData.ci);
+      if(existingTutor) {
+        id_tutor = existingTutor.ci;
+        console.log(`DEBUG: Tutor existente encontrado con CI: ${id_tutor}`);
+      } else {
+        if (!tutorData.email) {
+          tutorData.email = `${tutorData.ci}@placeholder.com`;
+        }
+        if (!tutorData.telefono) {
+          tutorData.telefono = "0000000";
+        }
+        await ProfesorService.create(tutorData);
+        id_tutor = tutorData.ci;
+        console.log(`DEBUG: Nuevo tutor creado con CI: ${id_tutor}`);
+      }
+    }
+
+    if (id_encargado === "new") {
+      console.log("DEBUG: Creando nuevo encargado");
+      const encargadoData = JSON.parse(new_encargado_data);
+      console.log("DEBUG: encargadoData (parsed):", encargadoData);
+      encargadoData.ci = parseInt(encargadoData.cedula, 10);
+      delete encargadoData.cedula;
+      const existingEncargado = await EncargadoRepository.getEncargado(encargadoData.ci);
+      if (existingEncargado) {
+        id_encargado = existingEncargado.ci;
+        console.log(`DEBUG: Encargado existente encontrado con CI: ${id_encargado}`);
+      } else {
+        if (!encargadoData.email) {
+          encargadoData.email = `${encargadoData.ci}@placeholder.com`;
+        }
+        if (!encargadoData.telefono) {
+          encargadoData.telefono = "0000000";
+        }
+        encargadoData.id_sede = id_sede;
+        await EncargadoService.create(encargadoData);
+        id_encargado = encargadoData.ci;
+        console.log(`DEBUG: Nuevo encargado creado con CI: ${id_encargado}`);
+      }
+    }
+
+    const idEstudianteInt = parseInt(id_estudiante, 10);
+
+    if (isNaN(idEstudianteInt)) {
+      console.error("ERROR: El ID del estudiante debe ser un número entero válido.");
+      return res.status(400).json({
         message: "El ID del estudiante debe ser un número entero válido.",
       });
-  }
-  if (!req.file || !req.file.buffer) {
-    return res.status(400).json({ message: "El archivo PDF es obligatorio" });
-  }
+    }
+    if (!req.file || !req.file.buffer) {
+      console.error("ERROR: El archivo PDF es obligatorio");
+      return res.status(400).json({ message: "El archivo PDF es obligatorio" });
+    }
 
-  // Leer el archivo PDF desde memoria
-  const archivo_pdf = Buffer.from(req.file.buffer);
+    const archivo_pdf = Buffer.from(req.file.buffer);
+    console.log(`DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`);
 
-  // Verificar si ya existe una tesis con ese id_tesis
-  const checkSql = "SELECT id FROM Tesis WHERE id = ?";
-  const checkResult = await db.execute(checkSql, [idTesisInt]);
+    let archivoUrl = null;
+    let teraboxFsId = null;
+    try {
+      console.log("DEBUG: Subiendo a Terabox...");
+      const details = await uploadBufferToTerabox(
+        archivo_pdf,
+        req.file.originalname,
+        "/tesis"
+      );
+      console.log("DEBUG: Detalles de Terabox:", details);
+      teraboxFsId = details?.fs_id || null;
+      archivoUrl = details?.dlink || details?.link || null;
+      console.log(`DEBUG: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`);
+    } catch (e) {
+      console.error("ERROR: Error subiendo a Terabox:", e.message);
+      return res
+        .status(500)
+        .json({ message: "Error subiendo a almacenamiento", error: e.message });
+    }
 
-  if (checkResult.rows.length > 0) {
-    return res.status(400).json({ message: "Ya existe una tesis con ese ID." });
-  }
-
-  // Subir a Terabox y obtener detalles
-  let archivoUrl = null;
-  let teraboxFsId = null;
-  try {
-    const details = await uploadBufferToTerabox(archivo_pdf, req.file.originalname, "/tesis");
-    console.log("Detalles de la tesis:", details);
-    // La librería documenta fileDetails; asumimos que incluye 'fs_id' y posiblemente 'dlink'
-    teraboxFsId = details?.fs_id || null;
-    archivoUrl = details?.dlink || details?.link || null; // fallback si expone link directo
-  } catch (e) {
-    console.error("Error subiendo a Terabox:", e.message);
-    return res.status(500).json({ message: "Error subiendo a almacenamiento", error: e.message });
-  }
-
-  // Insertar la tesis (guardando URL en vez de BLOB)
-  const sqlTesis = `
-        INSERT INTO Tesis (id, id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    const sqlTesis = `
+        INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
-  try {
-    await db.execute(sqlTesis, [
-      idTesisInt,
+    const params = [
       id_encargado,
       id_sede,
       id_tutor,
@@ -155,36 +229,42 @@ export const uploadTesis = async (req, res) => {
       estado,
       archivoUrl,
       teraboxFsId,
-    ]);
+    ];
+    console.log("DEBUG: SQL para insertar Tesis:", sqlTesis);
+    console.log("DEBUG: Parámetros para SQL:", params);
 
-    console.log("Tesis añadida con ID:", idTesisInt);
+    const result = await db.execute(sqlTesis, params);
+    console.log("DEBUG: Resultado de la inserción en Tesis:", result);
 
-    // Asociar estudiante con tesis en alumno_tesis
+    const newTesisId = result.lastInsertId;
+    console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
+
     const fakeReq = {
       body: {
         id_estudiante: idEstudianteInt,
-        id_tesis: idTesisInt,
+        id_tesis: newTesisId,
       },
     };
+    console.log("DEBUG: Fake request para postAlumnoTesisController:", fakeReq);
+
     const fakeRes = {
-      json: (response) => console.log("Respuesta de alumno_tesis:", response),
+      json: (response) => console.log("DEBUG: Respuesta de alumno_tesis:", response),
       status: (statusCode) => ({
-        json: (response) => console.log(`Error ${statusCode}:`, response),
+        json: (response) => console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
       }),
     };
 
     await postAlumnoTesisController(fakeReq, fakeRes);
 
-    // Responder éxito
+    console.log("DEBUG: Proceso de subida de tesis finalizado con éxito.");
     return res.json({
       message: "Tesis subida correctamente y autor asociado",
-      id_tesis: idTesisInt,
+      id_tesis: newTesisId,
       archivo_url: archivoUrl,
       terabox_fs_id: teraboxFsId,
     });
   } catch (error) {
-    console.error("Error al subir la tesis o asociar el autor:", error);
-
+    console.error("ERROR: Error al subir la tesis o asociar el autor:", error);
     return res
       .status(500)
       .json({ message: "Error al subir la tesis o asociar el autor", error });
@@ -197,7 +277,10 @@ export const downloadTesis = async (req, res) => {
 
   // Primero intenta con URL
   try {
-    const result = await db.execute("SELECT archivo_url, archivo_pdf FROM Tesis WHERE id = ?", [id]);
+    const result = await db.execute(
+      "SELECT archivo_url, archivo_pdf FROM Tesis WHERE id = ?",
+      [id]
+    );
     const row = result?.rows?.[0];
     if (!row) return res.status(404).json({ message: "Tesis no encontrada" });
 
@@ -213,14 +296,19 @@ export const downloadTesis = async (req, res) => {
         return res.status(404).json({ message: "Archivo PDF no encontrado" });
       }
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=tesis_${id}.pdf`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=tesis_${id}.pdf`
+      );
       return res.end(archivoPdfBuffer);
     }
 
     return res.status(404).json({ message: "Archivo no disponible" });
   } catch (err) {
     console.error("Error al descargar el archivo:", err.message);
-    return res.status(500).json({ message: "Error en el servidor", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Error en el servidor", error: err.message });
   }
 };
 
@@ -248,44 +336,136 @@ export const deleteTesis = async (req, res) => {
 // Actualizar una tesis
 export const updateTesis = async (req, res) => {
   const { id } = req.params;
-  const { nombre, fecha, estado } = req.body;
+  let {
+    nombre,
+    id_estudiante,
+    id_tutor,
+    id_encargado,
+    fecha,
+    estado,
+    nuevo_autor: new_estudiante_data,
+    nuevo_tutor: new_tutor_data,
+    nuevo_encargado: new_encargado_data,
+  } = req.body;
 
-  // Verifica si el archivo está presente
-  const archivoPdf = req.file && req.file.buffer ? Buffer.from(req.file.buffer) : null;
-
-  // Construye la consulta SQL
-  let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?`;
-  let params = [nombre, fecha, estado];
-
-  if (archivoPdf) {
-    query += `, archivo_pdf = ?`;
-    params.push(archivoPdf);
+  const id_sede_str = req.body.id_sede;
+  if (!id_sede_str) {
+    return res.status(400).json({ message: "El campo id_sede es obligatorio." });
+  }
+  const id_sede = parseInt(id_sede_str, 10);
+  if (isNaN(id_sede)) {
+    return res.status(400).json({ message: "El campo id_sede debe ser un número." });
   }
 
-  query += ` WHERE id = ?`;
-  params.push(id);
-
   try {
-    console.log("Consulta SQL:", query); // Verifica la consulta generada
-    console.log("Parámetros:", params); // Verifica los parámetros pasados
+    if (id_estudiante === "new") {
+      const estudianteData = JSON.parse(new_estudiante_data);
+      estudianteData.ci = parseInt(estudianteData.cedula, 10);
+      delete estudianteData.cedula;
+      const existingEstudiante = await EstudianteRepository.getByCi(estudianteData.ci);
+      if (existingEstudiante) {
+        id_estudiante = existingEstudiante.ci;
+      } else {
+        if (!estudianteData.email) {
+          estudianteData.email = `${estudianteData.ci}@placeholder.com`;
+        }
+        if (!estudianteData.telefono) {
+          estudianteData.telefono = "0000000";
+        }
+        await EstudianteService.create(estudianteData);
+        id_estudiante = estudianteData.ci;
+      }
+    }
 
-    // Ejecuta la consulta
+    if (id_tutor === "new") {
+      const tutorData = JSON.parse(new_tutor_data);
+      tutorData.ci = parseInt(tutorData.cedula, 10);
+      delete tutorData.cedula;
+      const existingTutor = await ProfesorRepository.getProfesor(tutorData.ci);
+      if(existingTutor) {
+        id_tutor = existingTutor.ci;
+      } else {
+        if (!tutorData.email) {
+          tutorData.email = `${tutorData.ci}@placeholder.com`;
+        }
+        if (!tutorData.telefono) {
+          tutorData.telefono = "0000000";
+        }
+        await ProfesorService.create(tutorData);
+        id_tutor = tutorData.ci;
+      }
+    }
+
+    if (id_encargado === "new") {
+      const encargadoData = JSON.parse(new_encargado_data);
+      encargadoData.ci = parseInt(encargadoData.cedula, 10);
+      delete encargadoData.cedula;
+      const existingEncargado = await EncargadoRepository.getEncargado(encargadoData.ci);
+      if (existingEncargado) {
+        id_encargado = existingEncargado.ci;
+      } else {
+        if (!encargadoData.email) {
+          encargadoData.email = `${encargadoData.ci}@placeholder.com`;
+        }
+        if (!encargadoData.telefono) {
+          encargadoData.telefono = "0000000";
+        }
+        encargadoData.id_sede = id_sede;
+        await EncargadoService.create(encargadoData);
+        id_encargado = encargadoData.ci;
+      }
+    }
+
+    let archivoUrl = null;
+    let teraboxFsId = null;
+
+    if (req.file && req.file.buffer) {
+      const archivo_pdf = Buffer.from(req.file.buffer);
+      try {
+        const details = await uploadBufferToTerabox(
+          archivo_pdf,
+          req.file.originalname,
+          "/tesis"
+        );
+        teraboxFsId = details?.fs_id || null;
+        archivoUrl = details?.dlink || details?.link || null;
+      } catch (e) {
+        console.error("Error subiendo a Terabox:", e.message);
+        return res
+          .status(500)
+          .json({ message: "Error subiendo a almacenamiento", error: e.message });
+      }
+    }
+
+    let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?, id_encargado = ?, id_sede = ?, id_tutor = ?`;
+    let params = [nombre, fecha, estado, id_encargado, id_sede, id_tutor];
+
+    if (archivoUrl) {
+      query += `, archivo_url = ?, terabox_fs_id = ?`;
+      params.push(archivoUrl, teraboxFsId);
+    }
+
+    query += ` WHERE id = ?`;
+    params.push(id);
+
     const result = await db.execute(query, params);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Tesis no encontrada." });
     }
 
+    // Actualizar la asociación del estudiante
+    const updateAlumnoTesisSql = `UPDATE Alumno_tesis SET id_estudiante = ? WHERE id_tesis = ?`;
+    await db.execute(updateAlumnoTesisSql, [id_estudiante, id]);
+
     return res
       .status(200)
       .json({ message: "Tesis actualizada correctamente." });
   } catch (err) {
     console.error("Error al actualizar la tesis:", err.message);
-    return res
-      .status(500)
-      .json({
-        message: "Hubo un error al actualizar la tesis.",
-        error: err.message,
-      });
+    return res.status(500).json({
+      message: "Hubo un error al actualizar la tesis.",
+      error: err.message,
+    });
   }
 };
