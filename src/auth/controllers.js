@@ -25,6 +25,7 @@ export const postlogincontroller = async (req, res) => {
     const payload = {
       id: user.id || user.ci,
       email: user.email,
+      user_type: user.user_type,
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET || "clave_secreta", {
@@ -41,6 +42,7 @@ export const postlogincontroller = async (req, res) => {
         nombre: user.nombre,
         apellido: user.apellido,
         email: user.email,
+        user_type: user.user_type,
       },
     });
   } catch (error) {
