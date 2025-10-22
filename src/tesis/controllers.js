@@ -101,12 +101,16 @@ export const uploadTesis = async (req, res) => {
   const id_sede_str = req.body.id_sede;
   if (!id_sede_str) {
     console.error("ERROR: El campo id_sede es obligatorio.");
-    return res.status(400).json({ message: "El campo id_sede es obligatorio." });
+    return res
+      .status(400)
+      .json({ message: "El campo id_sede es obligatorio." });
   }
   const id_sede = parseInt(id_sede_str, 10);
   if (isNaN(id_sede)) {
     console.error("ERROR: El campo id_sede debe ser un número.");
-    return res.status(400).json({ message: "El campo id_sede debe ser un número." });
+    return res
+      .status(400)
+      .json({ message: "El campo id_sede debe ser un número." });
   }
 
   try {
@@ -116,10 +120,14 @@ export const uploadTesis = async (req, res) => {
       console.log("DEBUG: estudianteData (parsed):", estudianteData);
       estudianteData.ci = parseInt(estudianteData.cedula, 10);
       delete estudianteData.cedula;
-      const existingEstudiante = await EstudianteRepository.getByCi(estudianteData.ci);
+      const existingEstudiante = await EstudianteRepository.getByCi(
+        estudianteData.ci
+      );
       if (existingEstudiante) {
         id_estudiante = existingEstudiante.ci;
-        console.log(`DEBUG: Estudiante existente encontrado con CI: ${id_estudiante}`);
+        console.log(
+          `DEBUG: Estudiante existente encontrado con CI: ${id_estudiante}`
+        );
       } else {
         if (!estudianteData.email) {
           estudianteData.email = `${estudianteData.ci}@placeholder.com`;
@@ -140,7 +148,7 @@ export const uploadTesis = async (req, res) => {
       tutorData.ci = parseInt(tutorData.cedula, 10);
       delete tutorData.cedula;
       const existingTutor = await ProfesorRepository.getProfesor(tutorData.ci);
-      if(existingTutor) {
+      if (existingTutor) {
         id_tutor = existingTutor.ci;
         console.log(`DEBUG: Tutor existente encontrado con CI: ${id_tutor}`);
       } else {
@@ -162,10 +170,14 @@ export const uploadTesis = async (req, res) => {
       console.log("DEBUG: encargadoData (parsed):", encargadoData);
       encargadoData.ci = parseInt(encargadoData.cedula, 10);
       delete encargadoData.cedula;
-      const existingEncargado = await EncargadoRepository.getEncargado(encargadoData.ci);
+      const existingEncargado = await EncargadoRepository.getEncargado(
+        encargadoData.ci
+      );
       if (existingEncargado) {
         id_encargado = existingEncargado.ci;
-        console.log(`DEBUG: Encargado existente encontrado con CI: ${id_encargado}`);
+        console.log(
+          `DEBUG: Encargado existente encontrado con CI: ${id_encargado}`
+        );
       } else {
         if (!encargadoData.email) {
           encargadoData.email = `${encargadoData.ci}@placeholder.com`;
@@ -173,7 +185,7 @@ export const uploadTesis = async (req, res) => {
         if (!encargadoData.telefono) {
           encargadoData.telefono = "0000000";
         }
-        encargadoData.id_sede = id_sede;
+        encargadoData.id_sede = id_sede; // Asegurarse de que id_sede se pasa
         await EncargadoService.create(encargadoData);
         id_encargado = encargadoData.ci;
         console.log(`DEBUG: Nuevo encargado creado con CI: ${id_encargado}`);
@@ -183,7 +195,9 @@ export const uploadTesis = async (req, res) => {
     const idEstudianteInt = parseInt(id_estudiante, 10);
 
     if (isNaN(idEstudianteInt)) {
-      console.error("ERROR: El ID del estudiante debe ser un número entero válido.");
+      console.error(
+        "ERROR: El ID del estudiante debe ser un número entero válido."
+      );
       return res.status(400).json({
         message: "El ID del estudiante debe ser un número entero válido.",
       });
@@ -194,7 +208,9 @@ export const uploadTesis = async (req, res) => {
     }
 
     const archivo_pdf = Buffer.from(req.file.buffer);
-    console.log(`DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`);
+    console.log(
+      `DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`
+    );
 
     let archivoUrl = null;
     let teraboxFsId = null;
@@ -208,7 +224,9 @@ export const uploadTesis = async (req, res) => {
       console.log("DEBUG: Detalles de Terabox:", details);
       teraboxFsId = details?.fs_id || null;
       archivoUrl = details?.dlink || details?.link || null;
-      console.log(`DEBUG: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`);
+      console.log(
+        `DEBUG: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`
+      );
     } catch (e) {
       console.error("ERROR: Error subiendo a Terabox:", e.message);
       return res
@@ -248,9 +266,11 @@ export const uploadTesis = async (req, res) => {
     console.log("DEBUG: Fake request para postAlumnoTesisController:", fakeReq);
 
     const fakeRes = {
-      json: (response) => console.log("DEBUG: Respuesta de alumno_tesis:", response),
+      json: (response) =>
+        console.log("DEBUG: Respuesta de alumno_tesis:", response),
       status: (statusCode) => ({
-        json: (response) => console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
+        json: (response) =>
+          console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
       }),
     };
 
@@ -350,11 +370,15 @@ export const updateTesis = async (req, res) => {
 
   const id_sede_str = req.body.id_sede;
   if (!id_sede_str) {
-    return res.status(400).json({ message: "El campo id_sede es obligatorio." });
+    return res
+      .status(400)
+      .json({ message: "El campo id_sede es obligatorio." });
   }
   const id_sede = parseInt(id_sede_str, 10);
   if (isNaN(id_sede)) {
-    return res.status(400).json({ message: "El campo id_sede debe ser un número." });
+    return res
+      .status(400)
+      .json({ message: "El campo id_sede debe ser un número." });
   }
 
   try {
@@ -362,7 +386,9 @@ export const updateTesis = async (req, res) => {
       const estudianteData = JSON.parse(new_estudiante_data);
       estudianteData.ci = parseInt(estudianteData.cedula, 10);
       delete estudianteData.cedula;
-      const existingEstudiante = await EstudianteRepository.getByCi(estudianteData.ci);
+      const existingEstudiante = await EstudianteRepository.getByCi(
+        estudianteData.ci
+      );
       if (existingEstudiante) {
         id_estudiante = existingEstudiante.ci;
       } else {
@@ -382,7 +408,7 @@ export const updateTesis = async (req, res) => {
       tutorData.ci = parseInt(tutorData.cedula, 10);
       delete tutorData.cedula;
       const existingTutor = await ProfesorRepository.getProfesor(tutorData.ci);
-      if(existingTutor) {
+      if (existingTutor) {
         id_tutor = existingTutor.ci;
       } else {
         if (!tutorData.email) {
@@ -400,7 +426,9 @@ export const updateTesis = async (req, res) => {
       const encargadoData = JSON.parse(new_encargado_data);
       encargadoData.ci = parseInt(encargadoData.cedula, 10);
       delete encargadoData.cedula;
-      const existingEncargado = await EncargadoRepository.getEncargado(encargadoData.ci);
+      const existingEncargado = await EncargadoRepository.getEncargado(
+        encargadoData.ci
+      );
       if (existingEncargado) {
         id_encargado = existingEncargado.ci;
       } else {
@@ -433,7 +461,10 @@ export const updateTesis = async (req, res) => {
         console.error("Error subiendo a Terabox:", e.message);
         return res
           .status(500)
-          .json({ message: "Error subiendo a almacenamiento", error: e.message });
+          .json({
+            message: "Error subiendo a almacenamiento",
+            error: e.message,
+          });
       }
     }
 

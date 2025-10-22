@@ -1,5 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import LoginService from "../auth/services.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +36,30 @@ export class EstudianteService {
 
   static async create(data) {
     try {
+      if (
+        !data.ci ||
+        !data.ci_type ||
+        !data.nombre ||
+        !data.apellido ||
+        !data.email ||
+        !data.telefono ||
+        !data.password
+      ) {
+        throw new Error("Todos los campos son obligatorios");
+      }
+      if (
+        typeof data.ci !== "number" ||
+        typeof data.ci_type !== "string" ||
+        typeof data.nombre !== "string" ||
+        typeof data.apellido !== "string" ||
+        typeof data.email !== "string" ||
+        typeof data.telefono !== "string" ||
+        typeof data.password !== "string"
+      ) {
+        throw new Error("Tipos de datos inválidos");
+      }
       const resultado = await EstudianteRepository.create(data);
+      await LoginService.register(data.ci, "estudiante", data.password);
       return {
         status: "success",
         message: "Estudiante creado correctamente",
@@ -49,6 +73,24 @@ export class EstudianteService {
 
   static async update(ci, data) {
     try {
+      if (
+        !data.ci_type ||
+        !data.nombre ||
+        !data.apellido ||
+        !data.email ||
+        !data.telefono
+      ) {
+        throw new Error("Todos los campos son obligatorios");
+      }
+      if (
+        typeof data.ci_type !== "string" ||
+        typeof data.nombre !== "string" ||
+        typeof data.apellido !== "string" ||
+        typeof data.email !== "string" ||
+        typeof data.telefono !== "string"
+      ) {
+        throw new Error("codigo debe ser numero, campo y nombre cadenas.");
+      }
       const resultado = await EstudianteRepository.update(ci, data);
       return {
         status: "success",

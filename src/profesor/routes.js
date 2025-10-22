@@ -1,17 +1,13 @@
-import express from "express";
-import {
-  getallprofesorcontroller,
-  getprofesorcontroller,
-  postprofesorcontroller,
-  deleteprofesorcontroller,
-} from "./controller.js";
+import { Router } from "express";
+import { getallprofesorcontroller, getprofesorcontroller, postprofesorcontroller, deleteprofesorcontroller, updateprofesorcontroller } from "./controller.js";
 
-const router = express.Router();
 
-// Define las rutas
-router.get("/", getallprofesorcontroller);
-router.get("/:ci", getprofesorcontroller);
-router.post("/", postprofesorcontroller);
-router.delete("/:ci", deleteprofesorcontroller);
+const profesorRouter = Router();
 
-export default router;
+profesorRouter.get("/", getallprofesorcontroller);
+profesorRouter.get("/:ci", getprofesorcontroller);
+profesorRouter.post("/", postprofesorcontroller);
+profesorRouter.put("/:ci", updateprofesorcontroller);
+profesorRouter.delete("/:ci", deleteprofesorcontroller);
+
+export default profesorRouter;

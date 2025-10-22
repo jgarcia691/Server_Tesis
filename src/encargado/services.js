@@ -1,11 +1,11 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import LoginService from "../auth/services.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { EncargadoRepository } from "./repositories.js";
-import bcrypt from "bcrypt";
 
 export class EncargadoService {
   static async getAll() {
@@ -39,30 +39,35 @@ export class EncargadoService {
       // Validaciones
       if (
         !data.ci ||
+        !data.ci_type ||
         !data.nombre ||
         !data.apellido ||
         !data.telefono ||
         !data.email ||
+        !data.password ||
         !data.id_sede
       ) {
         throw new Error(
-          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, email, id_sede",
+          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, telefono, email, password, id_sede"
         );
       }
       if (
         typeof data.ci !== "number" ||
+        typeof data.ci_type !== "string" ||
         typeof data.telefono !== "string" ||
         typeof data.nombre !== "string" ||
         typeof data.apellido !== "string" ||
         typeof data.email !== "string" ||
+        typeof data.password !== "string" ||
         typeof data.id_sede !== "number"
       ) {
         throw new Error(
-          "ci y sede deben ser números; nombre, apellido, email y telefono deben ser cadenas.",
+          "ci y sede deben ser números; ci_type, nombre, apellido, email, telefono y password deben ser cadenas."
         );
       }
 
       const resultado = await EncargadoRepository.create(data);
+      await LoginService.register(data.ci, "encargado", data.password);
       console.log("Encargado creado exitosamente:", resultado);
       return {
         status: "success",
@@ -85,36 +90,31 @@ export class EncargadoService {
         !data.nombre ||
         !data.apellido ||
         !data.telefono ||
-        !data.password ||
         !data.email ||
         !data.id_sede
       ) {
-        throw new Error(
-          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email",
+        throw new Error( // Se eliminó 'password' de aquí
+          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, email, id_sede" // Se eliminó 'password' de aquí
         );
       }
       if (
         typeof ci !== "number" ||
-        typeof data.telefono !== "number" ||
-        typeof data.password !== "string" ||
         typeof data.nombre !== "string" ||
         typeof data.apellido !== "string" ||
         typeof data.email !== "string" ||
         typeof data.id_sede !== "number"
       ) {
-        throw new Error(
-          "ci, telefono y sede deben ser números; nombre, apellido, email y password deben ser cadenas.",
+        throw new Error( // Se eliminó 'password' de aquí
+          "ci, telefono y sede deben ser números; nombre, apellido, email y telefono deben ser cadenas." // Se eliminó 'password' de aquí
         );
       }
 
-      // 🔐 Hashear la contraseña antes de guardar
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      const updatedData = { ...data, password: hashedPassword };
+      const updatedData = { ...data }; // No se maneja la contraseña aquí
 
       const resultado = await EncargadoRepository.update(ci, updatedData);
       console.log(
         `Encargado con CI ${ci} actualizado exitosamente:`,
-        resultado,
+        resultado
       );
       return {
         status: "success",
@@ -124,7 +124,7 @@ export class EncargadoService {
     } catch (error) {
       console.error(
         `Error al actualizar encargado con CI ${ci}:`,
-        error.message,
+        error.message
       );
       throw new Error("No se pudo actualizar el encargado: " + error.message);
     }

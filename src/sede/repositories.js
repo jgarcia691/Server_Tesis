@@ -32,16 +32,16 @@ export class SedeRepository {
     }
   }
 
-  static async create({ id, nombre, Direccion, telefono }) {
+  static async create({ id, nombre, direccion, telefono }) {
     try {
       // Validación simple
-      if (!id || !nombre || !Direccion || !telefono) {
+      if (!id || !nombre || !direccion || !telefono) {
         throw new Error("Todos los campos son obligatorios.");
       }
 
       const sql =
-        "INSERT INTO Sede (id, nombre, Direccion, telefono) VALUES (?, ?, ?, ?)";
-      const result = await db.execute(sql, [id, nombre, Direccion, telefono]);
+        "INSERT INTO Sede (id, nombre, direccion, telefono) VALUES (?, ?, ?, ?)";
+      const result = await db.execute(sql, [id, nombre, direccion, telefono]);
 
       // Verificar qué contiene el resultado
       console.log("Resultado de la inserción:", result); // Agregado para ver el resultado exacto

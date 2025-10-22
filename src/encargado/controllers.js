@@ -33,47 +33,48 @@ export const getencargadocontroller = async (req, res) => {
 
 export const postencargadocontroller = async (req, res) => {
   try {
-    const { ci, nombre, apellido, telefono, password, email, id_sede } =
+    const { ci, ci_type, nombre, apellido, telefono, email, password, id_sede } =
       req.body;
 
     if (
       !ci ||
+      !ci_type ||
       !nombre ||
       !apellido ||
       !telefono ||
-      !password ||
       !email ||
+      !password ||
       !id_sede
     ) {
       return res.status(400).json({
         message:
-          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email, id_sede",
+          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, telefono, email, password, id_sede",
       });
     }
 
     if (
       typeof ci !== "number" ||
-      typeof telefono !== "string" ||
+      typeof ci_type !== "string" ||
       typeof nombre !== "string" ||
       typeof apellido !== "string" ||
+      typeof telefono !== "string" ||
       typeof email !== "string" ||
       typeof password !== "string" ||
       typeof id_sede !== "number"
     ) {
       return res.status(400).json({
         message:
-          "ci, telefono y sede deben ser números; nombre, apellido, email y password deben ser cadenas.",
+          "Tipos de datos inválidos. Asegúrese de que ci e id_sede sean números y los demás campos sean cadenas.",
       });
     }
-
-    // ⚠️ Ya no hacemos hash aquí
     await EncargadoService.create({
       ci,
+      ci_type,
       nombre,
       apellido,
       telefono,
-      password,
       email,
+      password,
       id_sede,
     });
     res.status(201).json({ message: "Encargado creado correctamente" });
@@ -88,19 +89,9 @@ export const postencargadocontroller = async (req, res) => {
 export const putencargadocontroller = async (req, res) => {
   try {
     const ci = Number(req.params.ci);
-    const { nombre, apellido, telefono, password, email, id_sede } = req.body;
+    const { nombre, apellido, telefono, email, id_sede } = req.body; // No se espera 'password' aquí
 
-    const telefonoNumber = Number(telefono);
-
-    if (
-      !ci ||
-      !nombre ||
-      !apellido ||
-      !email ||
-      !telefonoNumber ||
-      !password ||
-      !id_sede
-    ) {
+    if (!ci || !nombre || !apellido || !email || !telefono || !id_sede) {
       return res.status(400).json({
         message:
           "Todos los campos son obligatorios: ci, nombre, apellido, telefono, password, email",
@@ -109,25 +100,24 @@ export const putencargadocontroller = async (req, res) => {
 
     if (
       isNaN(ci) ||
-      isNaN(telefonoNumber) ||
-      typeof nombre !== "string" ||
-      typeof apellido !== "string" ||
+      typeof telefono !== "string" || // 'telefono' es TEXT en DB, debe ser string
+      typeof nombre !== "string" || // 'telefono' es TEXT en DB, debe ser string
+      typeof apellido !== "string" || // Se eliminó 'password' de aquí
       typeof email !== "string" ||
-      typeof password !== "string" ||
       typeof id_sede !== "number"
     ) {
       return res.status(400).json({
+        // Mensaje de error ajustado
         message:
-          "ci y telefono deben ser números válidos; nombre, apellido, email y password deben ser cadenas.",
+          "ci y id_sede deben ser números válidos; nombre, apellido, telefono y email deben ser cadenas.",
       });
     }
 
-    // ⚠️ No hasheamos aquí
+    // ⚠️ La actualización de contraseña debe ser un endpoint separado.
     await EncargadoService.update(ci, {
       nombre,
       apellido,
-      telefono: telefonoNumber,
-      password,
+      telefono,
       email,
       id_sede,
     });
@@ -145,7 +135,9 @@ export const deletencargadocontroller = async (req, res) => {
   try {
     const { ci } = req.params;
 
-    if (!ci) {
+    // La validación !ci es redundante si ci siempre viene de req.params
+    if (isNaN(Number(ci))) {
+      // Validar que ci sea un número antes de intentar convertirlo
       return res.status(400).json({ message: "El campo ci es obligatorio" });
     }
 

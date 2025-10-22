@@ -9,7 +9,11 @@ export class EstudianteRepository {
   static async getAll() {
     try {
       const result = await db.execute({
-        sql: "SELECT * FROM Estudiante",
+        sql: `
+          SELECT p.ci, p.nombre, p.apellido, p.email, p.telefono
+          FROM Persona p
+          JOIN Estudiante e ON p.ci = e.estudiante_ci
+        `,
       });
       return result.rows;
     } catch (err) {
@@ -21,7 +25,12 @@ export class EstudianteRepository {
   static async getByCi(ci) {
     try {
       const result = await db.execute({
-        sql: "SELECT * FROM Estudiante WHERE ci = ?",
+        sql: `
+          SELECT p.ci, p.nombre, p.apellido, p.email, p.telefono
+          FROM Persona p
+          JOIN Estudiante e ON p.ci = e.estudiante_ci
+          WHERE p.ci = ?
+        `,
         args: [ci],
       });
       return result.rows.length > 0 ? result.rows[0] : null;
@@ -31,40 +40,59 @@ export class EstudianteRepository {
     }
   }
 
-  static async create({ ci, nombre, apellido, email, telefono }) {
+  static async create({ ci, ci_type, nombre, apellido, email, telefono }) {
+    const trx = await db.transaction();
     try {
-      const result = await db.execute({
-        sql: "INSERT INTO Estudiante (ci, nombre, apellido, email, telefono) VALUES (?, ?, ?, ?, ?)",
-        args: [ci, nombre, apellido, email, telefono],
+      await trx.execute({
+        sql: "INSERT INTO Persona (ci, ci_type, nombre, apellido, email, telefono) VALUES (?, ?, ?, ?, ?, ?)",
+        args: [ci, ci_type, nombre, apellido, email, telefono],
       });
-      return result;
+      await trx.execute({
+        sql: "INSERT INTO Estudiante (estudiante_ci) VALUES (?)",
+        args: [ci],
+      });
+      await trx.commit();
+      return { success: true };
     } catch (err) {
+      await trx.rollback();
       console.error("Error en EstudianteRepository.create:", err.message);
       throw err;
     }
   }
 
-  static async update(ci, { nombre, apellido, email, telefono }) {
+  static async update(ci, { ci_type, nombre, apellido, email, telefono }) {
+    const trx = await db.transaction(); // Iniciar transacción
     try {
-      const result = await db.execute({
-        sql: "UPDATE Estudiante SET nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
-        args: [nombre, apellido, email, telefono, ci],
+      await trx.execute({
+        // Usar trx.execute
+        sql: "UPDATE Persona SET ci_type = ?, nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
+        args: [ci_type, nombre, apellido, email, telefono, ci],
       });
-      return result;
+      // No hay campos específicos en Estudiante para actualizar, solo la Persona.
+      await trx.commit(); // Confirmar transacción
+      return { success: true };
     } catch (err) {
+      await trx.rollback(); // Revertir transacción en caso de error
       console.error("Error en EstudianteRepository.update:", err.message);
       throw err;
     }
   }
 
   static async delete(ci) {
+    const trx = await db.transaction();
     try {
-      const result = await db.execute({
-        sql: "DELETE FROM Estudiante WHERE ci = ?",
+      await trx.execute({
+        sql: "DELETE FROM Estudiante WHERE estudiante_ci = ?",
         args: [ci],
       });
-      return result;
+      await trx.execute({
+        sql: "DELETE FROM Persona WHERE ci = ?",
+        args: [ci],
+      });
+      await trx.commit();
+      return { success: true };
     } catch (err) {
+      await trx.rollback();
       console.error("Error en EstudianteRepository.delete:", err.message);
       throw err;
     }
