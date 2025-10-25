@@ -21,7 +21,15 @@ export const getallencargadocontroller = async (req, res) => {
 export const getencargadocontroller = async (req, res) => {
   try {
     const { ci } = req.params;
-    const encargado = await EncargadoService.getEncargado(ci);
+    const ciNumber = Number(ci);
+
+    if (isNaN(ciNumber)) {
+      return res
+        .status(400)
+        .json({ message: "El CI debe ser un número válido." });
+    }
+
+    const encargado = await EncargadoService.getEncargado(ciNumber);
     res.status(200).json(encargado);
   } catch (error) {
     console.error("Error: ", error);
@@ -33,8 +41,16 @@ export const getencargadocontroller = async (req, res) => {
 
 export const postencargadocontroller = async (req, res) => {
   try {
-    const { ci, ci_type, nombre, apellido, telefono, email, password, id_sede } =
-      req.body;
+    const {
+      ci,
+      ci_type,
+      nombre,
+      apellido,
+      telefono,
+      email,
+      password,
+      id_sede,
+    } = req.body;
 
     if (
       !ci ||

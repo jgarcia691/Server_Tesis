@@ -35,3 +35,8 @@ export async function uploadBufferToTerabox(
     } catch {}
   }
 }
+
+export async function getDownloadLinkFromFsId(fs_id) {
+  const response = await uploader.downloadFile(fs_id);
+  return response;
+}

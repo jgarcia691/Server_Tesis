@@ -8,6 +8,7 @@ import {
   deleteTesis,
   updateTesis,
   getTesisByName,
+  getTesisAutores,
 } from "./controllers.js"; // Asegúrate de que la ruta es correcta
 
 const router = express.Router();
@@ -24,6 +25,7 @@ const upload = multer({
 router.get("/tesis", getTesis); // Obtener todas las tesis
 router.get("/tesis/cadena/:nombre", getTesisByName); // Obtener una tesis que contenga x cadena en su nombre
 router.get("/tesis/:id", getTesisById); // Obtener una tesis por ID
+router.get("/tesis/:id/autores", getTesisAutores); // Obtener los autores de una tesis
 router.post("/tesis", upload.single("archivo_pdf"), uploadTesis); // Subir una nueva tesis con PDF
 router.get("/tesis/:id/download", downloadTesis); // Descargar un PDF de una tesis
 router.delete("/tesis/:id", deleteTesis); // Eliminar una tesis

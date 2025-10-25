@@ -91,7 +91,7 @@ export async function initDb() {
       id_tutor INTEGER NOT NULL,
       nombre TEXT NOT NULL,
       fecha TEXT NOT NULL,
-      estado TEXT NOT NULL CHECK(estado IN ('rechazado', 'en revisión', 'aprobado')), -- Assuming these are the possible states
+      estado TEXT NOT NULL CHECK(estado IN ('rechazado', 'en revisión', 'aprobado', 'pendiente')), -- Assuming these are the possible states
       archivo_url TEXT,
       terabox_fs_id TEXT,
       FOREIGN KEY (id_encargado) REFERENCES Encargado(encargado_ci) ON DELETE CASCADE,
@@ -116,11 +116,11 @@ export async function initDb() {
   // La llave foránea apunta a la nueva tabla de rol.
   await db.execute(`
     CREATE TABLE IF NOT EXISTS Alumno_tesis (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
       id_estudiante INTEGER NOT NULL,
       id_tesis INTEGER NOT NULL,
       FOREIGN KEY (id_estudiante) REFERENCES Estudiante(estudiante_ci) ON DELETE CASCADE,
-      FOREIGN KEY (id_tesis) REFERENCES Tesis(id) ON DELETE CASCADE
+      FOREIGN KEY (id_tesis) REFERENCES Tesis(id) ON DELETE CASCADE,
+      PRIMARY KEY (id_tesis, id_estudiante)
     );
   `);
 

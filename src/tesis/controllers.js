@@ -5,7 +5,7 @@ import db from "../../config/db.js";
 import fs from "fs";
 
 import { postAlumnoTesisController } from "../alumno_tesis/controllers.js";
-import { uploadBufferToTerabox } from "../../config/terabox.js";
+import { uploadBufferToTerabox, getDownloadLinkFromFsId } from "../../config/terabox.js";
 import { EstudianteService } from "../estudiantes/services.js";
 import { EncargadoService } from "../encargado/services.js";
 import { ProfesorService } from "../profesor/Services.js";
@@ -19,11 +19,32 @@ const __dirname = path.dirname(__filename);
 export const getTesis = async (req, res) => {
   try {
     const result = await db.execute({
-      sql: "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis",
+      sql: `
+        SELECT
+          t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado,
+          JSON_GROUP_ARRAY(
+            JSON_OBJECT(
+              'ci', p.ci,
+              'nombre', p.nombre,
+              'apellido', p.apellido,
+              'email', p.email
+            )
+          ) FILTER (WHERE p.ci IS NOT NULL) as autores
+        FROM Tesis t
+        LEFT JOIN Alumno_tesis at ON t.id = at.id_tesis
+        LEFT JOIN Estudiante e ON at.id_estudiante = e.estudiante_ci
+        LEFT JOIN Persona p ON e.estudiante_ci = p.ci
+        GROUP BY t.id
+      `,
     });
 
-    console.log("Resultado obtenido:", result);
-    res.json(result.rows);
+    const tesisConAutores = result.rows.map(tesis => ({
+      ...tesis,
+      autores: JSON.parse(tesis.autores || '[]')
+    }));
+
+    console.log("Resultado obtenido:", tesisConAutores);
+    res.json(tesisConAutores);
   } catch (err) {
     console.error("Error en getTesis:", err.message);
     res
@@ -36,15 +57,38 @@ export const getTesis = async (req, res) => {
 export const getTesisById = async (req, res) => {
   const { id } = req.params;
   console.log("ID recibido:", id);
-  const sql =
-    "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis WHERE id = ?";
+  const sql = `
+    SELECT
+      t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado,
+      JSON_GROUP_ARRAY(
+        JSON_OBJECT(
+          'ci', p.ci,
+          'nombre', p.nombre,
+          'apellido', p.apellido,
+          'email', p.email
+        )
+      ) FILTER (WHERE p.ci IS NOT NULL) as autores
+    FROM Tesis t
+    LEFT JOIN Alumno_tesis at ON t.id = at.id_tesis
+    LEFT JOIN Estudiante e ON at.id_estudiante = e.estudiante_ci
+    LEFT JOIN Persona p ON e.estudiante_ci = p.ci
+    WHERE t.id = ?
+    GROUP BY t.id
+  `;
   console.log("Consulta SQL:", sql);
 
   try {
     const result = await db.execute(sql, [id]);
     console.log("Resultado obtenido:", result);
 
-    res.json(result.rows);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Tesis no encontrada" });
+    }
+
+    const tesis = result.rows[0];
+    tesis.autores = JSON.parse(tesis.autores || '[]');
+
+    res.json(tesis);
   } catch (err) {
     console.error("Error en getTesisById:", err.message);
     res
@@ -57,8 +101,24 @@ export const getTesisById = async (req, res) => {
 export const getTesisByName = async (req, res) => {
   console.log(req.params);
   const { nombre } = req.params;
-  const sql =
-    "SELECT nombre, id_encargado, id_tutor, id_sede, fecha, estado FROM Tesis WHERE nombre LIKE ?";
+  const sql = `
+    SELECT
+      t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado,
+      JSON_GROUP_ARRAY(
+        JSON_OBJECT(
+          'ci', p.ci,
+          'nombre', p.nombre,
+          'apellido', p.apellido,
+          'email', p.email
+        )
+      ) FILTER (WHERE p.ci IS NOT NULL) as autores
+    FROM Tesis t
+    LEFT JOIN Alumno_tesis at ON t.id = at.id_tesis
+    LEFT JOIN Estudiante e ON at.id_estudiante = e.estudiante_ci
+    LEFT JOIN Persona p ON e.estudiante_ci = p.ci
+    WHERE t.nombre LIKE ?
+    GROUP BY t.id
+  `;
   const searchTerm = `%${nombre}%`; // Añade los comodines %
 
   console.log(`Buscando término:`, searchTerm);
@@ -71,10 +131,36 @@ export const getTesisByName = async (req, res) => {
       return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    res.json(rows); // Devuelve todo el array de resultados
+    const tesisConAutores = rows.map(tesis => ({
+      ...tesis,
+      autores: JSON.parse(tesis.autores || '[]')
+    }));
+
+    res.json(tesisConAutores);
   } catch (err) {
     console.error("Error al obtener tesis por nombre:", err.message);
     return res
+      .status(500)
+      .json({ message: "Error en el servidor", error: err.message });
+  }
+};
+
+export const getTesisAutores = async (req, res) => {
+  const { id } = req.params;
+  const sql = `
+    SELECT p.ci, p.nombre, p.apellido, p.email
+    FROM Persona p
+    JOIN Estudiante e ON p.ci = e.estudiante_ci
+    JOIN Alumno_tesis at ON e.estudiante_ci = at.id_estudiante
+    WHERE at.id_tesis = ?;
+  `;
+
+  try {
+    const result = await db.execute(sql, [id]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error en getTesisAutores:", err.message);
+    res
       .status(500)
       .json({ message: "Error en el servidor", error: err.message });
   }
@@ -87,7 +173,7 @@ export const uploadTesis = async (req, res) => {
   console.log("DEBUG: req.file:", req.file);
 
   let {
-    nombre,
+    nombre: nombre_tesis,
     id_estudiante,
     id_tutor,
     id_encargado,
@@ -97,6 +183,8 @@ export const uploadTesis = async (req, res) => {
     nuevo_tutor: new_tutor_data,
     nuevo_encargado: new_encargado_data,
   } = req.body;
+
+  const nombre = nombre_tesis || req.body.titulo;
 
   const id_sede_str = req.body.id_sede;
   if (!id_sede_str) {
@@ -135,6 +223,12 @@ export const uploadTesis = async (req, res) => {
         if (!estudianteData.telefono) {
           estudianteData.telefono = "0000000";
         }
+        if (!estudianteData.password) {
+          estudianteData.password = String(estudianteData.ci); // Default password
+        }
+        if (!estudianteData.ci_type) {
+          estudianteData.ci_type = "V"; // Default ci_type
+        }
         await EstudianteService.create(estudianteData);
         id_estudiante = estudianteData.ci;
         console.log(`DEBUG: Nuevo estudiante creado con CI: ${id_estudiante}`);
@@ -157,6 +251,12 @@ export const uploadTesis = async (req, res) => {
         }
         if (!tutorData.telefono) {
           tutorData.telefono = "0000000";
+        }
+        if (!tutorData.password) {
+          tutorData.password = String(tutorData.ci); // Default password
+        }
+        if (!tutorData.ci_type) {
+          tutorData.ci_type = "V"; // Default ci_type
         }
         await ProfesorService.create(tutorData);
         id_tutor = tutorData.ci;
@@ -186,22 +286,19 @@ export const uploadTesis = async (req, res) => {
           encargadoData.telefono = "0000000";
         }
         encargadoData.id_sede = id_sede; // Asegurarse de que id_sede se pasa
+        if (!encargadoData.password) {
+          encargadoData.password = String(encargadoData.ci); // Default password
+        }
+        if (!encargadoData.ci_type) {
+          encargadoData.ci_type = "V"; // Default ci_type
+        }
         await EncargadoService.create(encargadoData);
         id_encargado = encargadoData.ci;
         console.log(`DEBUG: Nuevo encargado creado con CI: ${id_encargado}`);
       }
     }
 
-    const idEstudianteInt = parseInt(id_estudiante, 10);
 
-    if (isNaN(idEstudianteInt)) {
-      console.error(
-        "ERROR: El ID del estudiante debe ser un número entero válido."
-      );
-      return res.status(400).json({
-        message: "El ID del estudiante debe ser un número entero válido.",
-      });
-    }
     if (!req.file || !req.file.buffer) {
       console.error("ERROR: El archivo PDF es obligatorio");
       return res.status(400).json({ message: "El archivo PDF es obligatorio" });
@@ -223,7 +320,10 @@ export const uploadTesis = async (req, res) => {
       );
       console.log("DEBUG: Detalles de Terabox:", details);
       teraboxFsId = details?.fs_id || null;
-      archivoUrl = details?.dlink || details?.link || null;
+      if (teraboxFsId) {
+        const link = await getDownloadLinkFromFsId(teraboxFsId);
+        archivoUrl = link?.downloadLink || null;
+      }
       console.log(
         `DEBUG: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`
       );
@@ -239,14 +339,18 @@ export const uploadTesis = async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
-      id_encargado,
+      parseInt(id_encargado, 10),
       id_sede,
-      id_tutor,
+      parseInt(id_tutor, 10),
       nombre,
       fecha,
-      estado,
+      estado.toLowerCase() === "aprobada"
+        ? "aprobado"
+        : estado.toLowerCase() === "en revision"
+        ? "en revisión"
+        : estado.toLowerCase(), // Corregir estado
       archivoUrl,
-      teraboxFsId,
+      teraboxFsId ? String(teraboxFsId) : null, // Convertir a String
     ];
     console.log("DEBUG: SQL para insertar Tesis:", sqlTesis);
     console.log("DEBUG: Parámetros para SQL:", params);
@@ -254,27 +358,45 @@ export const uploadTesis = async (req, res) => {
     const result = await db.execute(sqlTesis, params);
     console.log("DEBUG: Resultado de la inserción en Tesis:", result);
 
-    const newTesisId = result.lastInsertId;
+    const newTesisId = Number(result.lastInsertRowid);
     console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
 
-    const fakeReq = {
-      body: {
-        id_estudiante: idEstudianteInt,
-        id_tesis: newTesisId,
-      },
-    };
-    console.log("DEBUG: Fake request para postAlumnoTesisController:", fakeReq);
+    let idEstudiantes;
+    if (typeof id_estudiante === 'string') {
+      idEstudiantes = id_estudiante.split(',').map(id => parseInt(id.trim(), 10));
+    } else if (Array.isArray(id_estudiante)) {
+      idEstudiantes = id_estudiante.map(id => parseInt(id, 10));
+    } else {
+      idEstudiantes = [parseInt(id_estudiante, 10)];
+    }
 
-    const fakeRes = {
-      json: (response) =>
-        console.log("DEBUG: Respuesta de alumno_tesis:", response),
-      status: (statusCode) => ({
+    for (const id of idEstudiantes) {
+      if (isNaN(id)) {
+        console.error(
+          "ERROR: Uno de los IDs de estudiante no es un número entero válido."
+        );
+        continue; // O manejar el error como se prefiera
+      }
+
+      const fakeReq = {
+        body: {
+          id_estudiante: id,
+          id_tesis: newTesisId,
+        },
+      };
+      console.log("DEBUG: Fake request para postAlumnoTesisController:", fakeReq);
+
+      const fakeRes = {
         json: (response) =>
-          console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
-      }),
-    };
+          console.log("DEBUG: Respuesta de alumno_tesis:", response),
+        status: (statusCode) => ({
+          json: (response) =>
+            console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
+        }),
+      };
 
-    await postAlumnoTesisController(fakeReq, fakeRes);
+      await postAlumnoTesisController(fakeReq, fakeRes);
+    }
 
     console.log("DEBUG: Proceso de subida de tesis finalizado con éxito.");
     return res.json({
@@ -357,7 +479,7 @@ export const deleteTesis = async (req, res) => {
 export const updateTesis = async (req, res) => {
   const { id } = req.params;
   let {
-    nombre,
+    nombre: nombre_tesis, // Renombrar para evitar conflictos
     id_estudiante,
     id_tutor,
     id_encargado,
@@ -367,6 +489,9 @@ export const updateTesis = async (req, res) => {
     nuevo_tutor: new_tutor_data,
     nuevo_encargado: new_encargado_data,
   } = req.body;
+
+  // Aceptar 'titulo' o 'nombre' para el nombre de la tesis
+  const nombre = nombre_tesis || req.body.titulo;
 
   const id_sede_str = req.body.id_sede;
   if (!id_sede_str) {
@@ -398,6 +523,12 @@ export const updateTesis = async (req, res) => {
         if (!estudianteData.telefono) {
           estudianteData.telefono = "0000000";
         }
+        if (!estudianteData.password) {
+          estudianteData.password = String(estudianteData.ci); // Default password
+        }
+        if (!estudianteData.ci_type) {
+          estudianteData.ci_type = "V"; // Default ci_type
+        }
         await EstudianteService.create(estudianteData);
         id_estudiante = estudianteData.ci;
       }
@@ -416,6 +547,12 @@ export const updateTesis = async (req, res) => {
         }
         if (!tutorData.telefono) {
           tutorData.telefono = "0000000";
+        }
+        if (!tutorData.password) {
+          tutorData.password = String(tutorData.ci); // Default password
+        }
+        if (!tutorData.ci_type) {
+          tutorData.ci_type = "V"; // Default ci_type
         }
         await ProfesorService.create(tutorData);
         id_tutor = tutorData.ci;
@@ -439,6 +576,12 @@ export const updateTesis = async (req, res) => {
           encargadoData.telefono = "0000000";
         }
         encargadoData.id_sede = id_sede;
+        if (!encargadoData.password) {
+          encargadoData.password = String(encargadoData.ci); // Default password
+        }
+        if (!encargadoData.ci_type) {
+          encargadoData.ci_type = "V"; // Default ci_type
+        }
         await EncargadoService.create(encargadoData);
         id_encargado = encargadoData.ci;
       }
@@ -456,20 +599,32 @@ export const updateTesis = async (req, res) => {
           "/tesis"
         );
         teraboxFsId = details?.fs_id || null;
-        archivoUrl = details?.dlink || details?.link || null;
+        if (teraboxFsId) {
+          const link = await getDownloadLinkFromFsId(teraboxFsId);
+          archivoUrl = link?.downloadLink || null;
+        }
       } catch (e) {
         console.error("Error subiendo a Terabox:", e.message);
-        return res
-          .status(500)
-          .json({
-            message: "Error subiendo a almacenamiento",
-            error: e.message,
-          });
+        return res.status(500).json({
+          message: "Error subiendo a almacenamiento",
+          error: e.message,
+        });
       }
     }
 
     let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?, id_encargado = ?, id_sede = ?, id_tutor = ?`;
-    let params = [nombre, fecha, estado, id_encargado, id_sede, id_tutor];
+    let params = [
+      nombre,
+      fecha,
+      estado.toLowerCase() === "aprobada"
+        ? "aprobado"
+        : estado.toLowerCase() === "en revision"
+        ? "en revisión"
+        : estado.toLowerCase(),
+      id_encargado,
+      id_sede,
+      id_tutor,
+    ];
 
     if (archivoUrl) {
       query += `, archivo_url = ?, terabox_fs_id = ?`;
@@ -486,8 +641,28 @@ export const updateTesis = async (req, res) => {
     }
 
     // Actualizar la asociación del estudiante
-    const updateAlumnoTesisSql = `UPDATE Alumno_tesis SET id_estudiante = ? WHERE id_tesis = ?`;
-    await db.execute(updateAlumnoTesisSql, [id_estudiante, id]);
+    const deleteAutoresSql = `DELETE FROM Alumno_tesis WHERE id_tesis = ?`;
+    await db.execute(deleteAutoresSql, [id]);
+
+    let idEstudiantes;
+    if (typeof id_estudiante === 'string') {
+      idEstudiantes = id_estudiante.split(',').map(id => parseInt(id.trim(), 10));
+    } else if (Array.isArray(id_estudiante)) {
+      idEstudiantes = id_estudiante.map(id => parseInt(id, 10));
+    } else {
+      idEstudiantes = [parseInt(id_estudiante, 10)];
+    }
+
+    for (const autorId of idEstudiantes) {
+      if (isNaN(autorId)) {
+        console.error(
+          "ERROR: Uno de los IDs de estudiante no es un número entero válido."
+        );
+        continue; // O manejar el error como se prefiera
+      }
+      const insertAutorSql = `INSERT INTO Alumno_tesis (id_estudiante, id_tesis) VALUES (?, ?)`;
+      await db.execute(insertAutorSql, [autorId, id]);
+    }
 
     return res
       .status(200)
