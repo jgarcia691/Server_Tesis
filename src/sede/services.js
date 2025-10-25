@@ -62,7 +62,13 @@ export class SedeService {
       }
 
       console.log("Creando una nueva sede con los datos:", data);
-      const resultado = await SedeRepository.create(data);
+      // Normalizar clave "Direccion" (mayúscula) a "direccion" que espera el repositorio
+      const resultado = await SedeRepository.create({
+        id: id,
+        nombre,
+        direccion: Direccion,
+        telefono,
+      });
       console.log("Sede creada exitosamente:", resultado);
       return {
         status: "success",
