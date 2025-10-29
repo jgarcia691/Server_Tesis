@@ -1,11 +1,16 @@
+import https from "https";
 import path from "path";
+import axios from "axios";
 import { fileURLToPath } from "url";
 import db from "../../config/db.js";
 
 import fs from "fs";
 
 import { postAlumnoTesisController } from "../alumno_tesis/controllers.js";
-import { uploadBufferToTerabox, getDownloadLinkFromFsId } from "../../config/terabox.js";
+import {
+  uploadBufferToTerabox,
+  getDownloadLinkFromFsId,
+} from "../../config/terabox.js";
 import { EstudianteService } from "../estudiantes/services.js";
 import { EncargadoService } from "../encargado/services.js";
 import { ProfesorService } from "../profesor/Services.js";
@@ -38,9 +43,9 @@ export const getTesis = async (req, res) => {
       `,
     });
 
-    const tesisConAutores = result.rows.map(tesis => ({
+    const tesisConAutores = result.rows.map((tesis) => ({
       ...tesis,
-      autores: JSON.parse(tesis.autores || '[]')
+      autores: JSON.parse(tesis.autores || "[]"),
     }));
 
     console.log("Resultado obtenido:", tesisConAutores);
@@ -86,7 +91,7 @@ export const getTesisById = async (req, res) => {
     }
 
     const tesis = result.rows[0];
-    tesis.autores = JSON.parse(tesis.autores || '[]');
+    tesis.autores = JSON.parse(tesis.autores || "[]");
 
     res.json(tesis);
   } catch (err) {
@@ -131,9 +136,9 @@ export const getTesisByName = async (req, res) => {
       return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    const tesisConAutores = rows.map(tesis => ({
+    const tesisConAutores = rows.map((tesis) => ({
       ...tesis,
-      autores: JSON.parse(tesis.autores || '[]')
+      autores: JSON.parse(tesis.autores || "[]"),
     }));
 
     res.json(tesisConAutores);
@@ -298,7 +303,6 @@ export const uploadTesis = async (req, res) => {
       }
     }
 
-
     if (!req.file || !req.file.buffer) {
       console.error("ERROR: El archivo PDF es obligatorio");
       return res.status(400).json({ message: "El archivo PDF es obligatorio" });
@@ -362,10 +366,12 @@ export const uploadTesis = async (req, res) => {
     console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
 
     let idEstudiantes;
-    if (typeof id_estudiante === 'string') {
-      idEstudiantes = id_estudiante.split(',').map(id => parseInt(id.trim(), 10));
+    if (typeof id_estudiante === "string") {
+      idEstudiantes = id_estudiante
+        .split(",")
+        .map((id) => parseInt(id.trim(), 10));
     } else if (Array.isArray(id_estudiante)) {
-      idEstudiantes = id_estudiante.map(id => parseInt(id, 10));
+      idEstudiantes = id_estudiante.map((id) => parseInt(id, 10));
     } else {
       idEstudiantes = [parseInt(id_estudiante, 10)];
     }
@@ -384,14 +390,20 @@ export const uploadTesis = async (req, res) => {
           id_tesis: newTesisId,
         },
       };
-      console.log("DEBUG: Fake request para postAlumnoTesisController:", fakeReq);
+      console.log(
+        "DEBUG: Fake request para postAlumnoTesisController:",
+        fakeReq
+      );
 
       const fakeRes = {
         json: (response) =>
           console.log("DEBUG: Respuesta de alumno_tesis:", response),
         status: (statusCode) => ({
           json: (response) =>
-            console.log(`DEBUG: Error ${statusCode} en alumno_tesis:`, response),
+            console.log(
+              `DEBUG: Error ${statusCode} en alumno_tesis:`,
+              response
+            ),
         }),
       };
 
@@ -417,37 +429,90 @@ export const downloadTesis = async (req, res) => {
   const { id } = req.params;
   console.log("ID recibido:", id);
 
-  // Primero intenta con URL
   try {
     const result = await db.execute(
-      "SELECT archivo_url, archivo_pdf FROM Tesis WHERE id = ?",
+      "SELECT archivo_url, terabox_fs_id FROM Tesis WHERE id = ?",
       [id]
     );
     const row = result?.rows?.[0];
-    if (!row) return res.status(404).json({ message: "Tesis no encontrada" });
-
-    if (row.archivo_url) {
-      // Redirigir a URL (pública o presignada)
-      return res.redirect(row.archivo_url);
+    if (!row) {
+      return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    // Fallback: si existe BLOB (para datos antiguos)
-    if (row.archivo_pdf) {
-      const archivoPdfBuffer = Buffer.from(row.archivo_pdf);
-      if (archivoPdfBuffer.length === 0) {
-        return res.status(404).json({ message: "Archivo PDF no encontrado" });
+    if (row.terabox_fs_id) {
+      // Get a fresh download link right before the download attempt
+      console.log("Obteniendo enlace de descarga...");
+      const link = await getDownloadLinkFromFsId(row.terabox_fs_id);
+      const fileLink = link?.downloadLink;
+
+      if (!fileLink) {
+        if (row.archivo_url) {
+          console.log(
+            "No se pudo obtener el enlace de Terabox, usando URL de respaldo."
+          );
+          return res.redirect(row.archivo_url);
+        }
+        throw new Error(
+          "No se pudo obtener el enlace de descarga y no hay URL de respaldo."
+        );
       }
+
+      console.log(`Intentando descargar desde: ${fileLink}`);
+
+      const response = await axios({
+        method: "GET",
+        url: fileLink,
+        responseType: "stream",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          Referer: "https://www.terabox.com/",
+          Cookie: `ndus=${process.env.TERABOX_NDUS}`,
+        },
+      });
+
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename=tesis_${id}.pdf`
+        `attachment; filename="tesis_${id}.pdf"`
       );
-      return res.end(archivoPdfBuffer);
-    }
+      response.data.pipe(res);
 
-    return res.status(404).json({ message: "Archivo no disponible" });
+      // Handle errors on the stream
+      response.data.on("error", (streamError) => {
+        console.error("Error en el stream de descarga:", streamError);
+        if (!res.headersSent) {
+          res
+            .status(500)
+            .json({ message: "Error durante la descarga del archivo." });
+        }
+      });
+    } else if (row.archivo_url) {
+      return res.redirect(row.archivo_url);
+    } else {
+      return res.status(404).json({ message: "Archivo no disponible" });
+    }
   } catch (err) {
     console.error("Error al descargar el archivo:", err.message);
+    // Try to fallback if the error happened during download
+    try {
+      const result = await db.execute(
+        "SELECT archivo_url FROM Tesis WHERE id = ?",
+        [id]
+      );
+      const row = result?.rows?.[0];
+      if (row?.archivo_url) {
+        console.log(
+          "Error en la descarga principal, intentando fallback a archivo_url."
+        );
+        return res.redirect(row.archivo_url);
+      }
+    } catch (fallbackError) {
+      console.error(
+        "Error durante el intento de fallback:",
+        fallbackError.message
+      );
+    }
     return res
       .status(500)
       .json({ message: "Error en el servidor", error: err.message });
@@ -645,10 +710,12 @@ export const updateTesis = async (req, res) => {
     await db.execute(deleteAutoresSql, [id]);
 
     let idEstudiantes;
-    if (typeof id_estudiante === 'string') {
-      idEstudiantes = id_estudiante.split(',').map(id => parseInt(id.trim(), 10));
+    if (typeof id_estudiante === "string") {
+      idEstudiantes = id_estudiante
+        .split(",")
+        .map((id) => parseInt(id.trim(), 10));
     } else if (Array.isArray(id_estudiante)) {
-      idEstudiantes = id_estudiante.map(id => parseInt(id, 10));
+      idEstudiantes = id_estudiante.map((id) => parseInt(id, 10));
     } else {
       idEstudiantes = [parseInt(id_estudiante, 10)];
     }

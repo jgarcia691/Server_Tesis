@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node src/tesis/tesis.integration.test.js",
     "start": "nodemon server.js",
     "terabox:upload-test": "node scripts/terabox_test_upload.js"
   },
