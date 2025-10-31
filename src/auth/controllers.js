@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
-export const postlogincontroller = async (req, res) => {
+export const postlogincontroller = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -46,12 +46,11 @@ export const postlogincontroller = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(" Error al iniciar sesión:", error);
-    res.status(500).json({ message: "Error en el servidor" });
+    next(error);
   }
 };
 
-export const registerController = async (req, res) => {
+export const registerController = async (req, res, next) => {
   const { user_ci, user_type, password } = req.body;
 
   if (!user_ci || !user_type || !password) {
@@ -62,10 +61,6 @@ export const registerController = async (req, res) => {
     await LoginService.register(user_ci, user_type, password);
     res.status(201).json({ message: "Usuario registrado correctamente" });
   } catch (error) {
-    console.error(" Error al registrar usuario:", error);
-    if (error.message === "El usuario ya existe") {
-      return res.status(409).json({ message: error.message });
-    }
-    res.status(500).json({ message: "Error en el servidor" });
+    next(error);
   }
 };

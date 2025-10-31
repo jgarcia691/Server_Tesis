@@ -66,6 +66,12 @@ export class ProfesorService {
         data: resultado,
       };
     } catch (error) {
+      if (
+        error.message.includes("UNIQUE constraint failed") &&
+        error.message.includes("Persona.email")
+      ) {
+        throw new Error("El correo electrónico ya está registrado.");
+      }
       console.error("Error al crear el profesor:", error.message);
       throw new Error("No se pudo crear el profesor: " + error.message);
     }

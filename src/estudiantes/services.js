@@ -28,7 +28,7 @@ export class EstudianteService {
     } catch (error) {
       console.error(
         `Error en EstudianteService.getByCi (CI: ${ci}):`,
-        error.message,
+        error.message
       );
       throw new Error(error.message);
     }
@@ -66,6 +66,13 @@ export class EstudianteService {
         data: resultado,
       };
     } catch (error) {
+      // Manejo específico para el error de email duplicado
+      if (
+        error.message.includes("UNIQUE constraint failed") &&
+        error.message.includes("Persona.email")
+      ) {
+        throw new Error("El correo electrónico ya está registrado.");
+      }
       console.error("Error en EstudianteService.create:", error.message);
       throw new Error("No se pudo crear el estudiante: " + error.message);
     }
@@ -100,7 +107,7 @@ export class EstudianteService {
     } catch (error) {
       console.error(
         `Error en EstudianteService.update (CI: ${ci}):`,
-        error.message,
+        error.message
       );
       throw new Error("No se pudo actualizar el estudiante: " + error.message);
     }
@@ -117,7 +124,7 @@ export class EstudianteService {
     } catch (error) {
       console.error(
         `Error en EstudianteService.delete (CI: ${ci}):`,
-        error.message,
+        error.message
       );
       throw new Error("No se pudo eliminar el estudiante: " + error.message);
     }

@@ -6,19 +6,16 @@ const __dirname = path.dirname(__filename);
 
 import { AlumnoTesisService } from "./services.js";
 
-export const getAlumnoTesisController = async (req, res) => {
+export const getAlumnoTesisController = async (req, res, next) => {
   try {
     const result = await AlumnoTesisService.getAll();
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error en GET Alumno_tesis:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al obtener registros", error: error.message });
+    next(error);
   }
 };
 
-export const getAlumnoTesisByIdController = async (req, res) => {
+export const getAlumnoTesisByIdController = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
@@ -31,14 +28,11 @@ export const getAlumnoTesisByIdController = async (req, res) => {
     const result = await AlumnoTesisService.getById(id);
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error al obtener registro por id:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al obtener registro", error: error.message });
+    next(error);
   }
 };
 
-export const postAlumnoTesisController = async (req, res) => {
+export const postAlumnoTesisController = async (req, res, next) => {
   try {
     const { id_estudiante, id_tesis } = req.body;
 
@@ -57,14 +51,11 @@ export const postAlumnoTesisController = async (req, res) => {
     const result = await AlumnoTesisService.create({ id_estudiante, id_tesis });
     res.status(201).json(result);
   } catch (error) {
-    console.error("Error en POST Alumno_tesis:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al crear registro", error: error.message });
+    next(error);
   }
 };
 
-export const deleteAlumnoTesisController = async (req, res) => {
+export const deleteAlumnoTesisController = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
@@ -79,9 +70,6 @@ export const deleteAlumnoTesisController = async (req, res) => {
     const result = await AlumnoTesisService.delete(id);
     res.status(200).json(result);
   } catch (error) {
-    console.error("Error en DELETE Alumno_tesis:", error.message);
-    res
-      .status(500)
-      .json({ message: "Error al eliminar registro", error: error.message });
+    next(error);
   }
 };

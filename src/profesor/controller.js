@@ -6,32 +6,26 @@ const __dirname = path.dirname(__filename);
 
 import { ProfesorService } from "./Services.js";
 
-export const getallprofesorcontroller = async (req, res) => {
+export const getallprofesorcontroller = async (req, res, next) => {
   try {
     const profesor = await ProfesorService.getAll();
     res.status(200).json(profesor);
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener profesor", error: error.message });
+    next(error);
   }
 };
 
-export const getprofesorcontroller = async (req, res) => {
+export const getprofesorcontroller = async (req, res, next) => {
   try {
     const { ci } = req.params;
     const profesor = await ProfesorService.getProfesor(ci);
     res.status(200).json(profesor);
   } catch (error) {
-    console.error("Error: ", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener profesor", error: error.message });
+    next(error);
   }
 };
 
-export const postprofesorcontroller = async (req, res) => {
+export const postprofesorcontroller = async (req, res, next) => {
   try {
     const { ci, ci_type, nombre, apellido, email, telefono, password } = req.body;
     if (!ci || !ci_type || !nombre || !apellido || !email || !telefono || !password) {
@@ -58,14 +52,11 @@ export const postprofesorcontroller = async (req, res) => {
     await ProfesorService.create({ ci, ci_type, nombre, apellido, email, telefono, password });
     res.status(201).json({ message: "Profesor creado correctamente" });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al crear profesor", error: error.message });
+    next(error);
   }
 };
 
-export const updateprofesorcontroller = async (req, res) => {
+export const updateprofesorcontroller = async (req, res, next) => {
   try {
     const ci = Number(req.params.ci);
     const { ci_type, nombre, apellido, email, telefono } = req.body;
@@ -101,15 +92,11 @@ export const updateprofesorcontroller = async (req, res) => {
     });
     res.status(200).json({ message: "Profesor actualizado correctamente" });
   } catch (error) {
-    console.error("Error en updateProfesorController:", error.message);
-    res.status(500).json({
-      message: "Error al actualizar profesor",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteprofesorcontroller = async (req, res) => {
+export const deleteprofesorcontroller = async (req, res, next) => {
   try {
     const { ci } = req.params;
     if (!ci) {
@@ -126,9 +113,6 @@ export const deleteprofesorcontroller = async (req, res) => {
     await ProfesorService.delete(ciNumber);
     res.status(200).json({ message: "profesor eliminado correctamente" });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "profesor al eliminar usuario", error: error.message });
+    next(error);
   }
 };

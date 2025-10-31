@@ -21,6 +21,7 @@ import alumno_carreraroutes from "./src/alumno_carrera/routes.js";
 import alumno_tesisroutes from "./src/alumno_tesis/routes.js";
 import carrera_tesisroutes from "./src/carrera_tesis/routes.js";
 import loginroute from "./src/auth/routes.js";
+import handleErrors from "./src/middlewares/errors.js";
 
 const app = express();
 
@@ -39,6 +40,9 @@ app.use("/api/alumno_carrera", alumno_carreraroutes);
 app.use("/api/alumno_tesis", alumno_tesisroutes);
 app.use("/api/carrera_tesis", carrera_tesisroutes);
 app.use("/api", loginroute);
+
+// Error handling middleware
+app.use(handleErrors);
 
 const PORT = process.env.PORT || 8080;
 

@@ -6,20 +6,17 @@ const __dirname = path.dirname(__filename);
 
 import { JuradoService } from "./service.js";
 
-export const getjuradocontroller = async (req, res) => {
+export const getjuradocontroller = async (req, res, next) => {
   try {
     const { id_tesis } = req.params;
     const jurado = await JuradoService.getJurado(id_tesis);
     res.status(200).json(jurado);
   } catch (error) {
-    console.error("Error: ", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener jurado", error: error.message });
+    next(error);
   }
 };
 
-export const postjuradocontroller = async (req, res) => {
+export const postjuradocontroller = async (req, res, next) => {
   try {
     const { id_tesis, id_profesor } = req.body;
     if (!id_tesis || !id_profesor) {
@@ -33,14 +30,11 @@ export const postjuradocontroller = async (req, res) => {
     await JuradoService.create({ id_tesis, id_profesor });
     res.status(201).json({ message: "jurado creado correctamente" });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al crear jurado", error: error.message });
+    next(error);
   }
 };
 
-export const deletejuradocontroller = async (req, res) => {
+export const deletejuradocontroller = async (req, res, next) => {
   try {
     const { id_tesis, id_profesor } = req.body;
     if (!id_tesis || !id_profesor) {
@@ -54,9 +48,6 @@ export const deletejuradocontroller = async (req, res) => {
     await JuradoService.delete({ id_tesis, id_profesor });
     res.status(201).json({ message: "jurado eliminado correctamente" });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al eliminar jurado", error: error.message });
+    next(error);
   }
 };

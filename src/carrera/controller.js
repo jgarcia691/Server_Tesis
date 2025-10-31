@@ -6,32 +6,26 @@ const __dirname = path.dirname(__filename);
 
 import { CarreraService } from "./services.js";
 
-export const getcarreracontroller = async (req, res) => {
+export const getcarreracontroller = async (req, res, next) => {
   try {
     const carreras = await CarreraService.getAll();
     res.status(200).json(carreras);
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener carreras", error: error.message });
+    next(error);
   }
 };
 
-export const getcarreracodcontroller = async (req, res) => {
+export const getcarreracodcontroller = async (req, res, next) => {
   try {
     const { cod } = req.params;
     const carreras = await CarreraService.getCarrera(cod);
     res.status(200).json(carreras);
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al obtener carrera", error: error.message });
+    next(error);
   }
 };
 
-export const postcarreracontroller = async (req, res) => {
+export const postcarreracontroller = async (req, res, next) => {
   try {
     const { codigo, nombre, campo } = req.body;
     if (!codigo || !nombre || !campo) {
@@ -51,19 +45,11 @@ export const postcarreracontroller = async (req, res) => {
     const result = await CarreraService.create({ codigo, nombre, campo });
     res.status(201).json(result);
   } catch (error) {
-    console.error("Error:", error);
-    if (
-      error.message === "Ya existe una carrera con el código proporcionado."
-    ) {
-      return res.status(409).json({ message: error.message });
-    }
-    res
-      .status(500)
-      .json({ message: "Error al crear carrera", error: error.message });
+    next(error);
   }
 };
 
-export const deletecarreracontroller = async (req, res) => {
+export const deletecarreracontroller = async (req, res, next) => {
   try {
     const { codigo } = req.params;
     if (!codigo) {
@@ -82,9 +68,6 @@ export const deletecarreracontroller = async (req, res) => {
     await CarreraService.delete(codNumber);
     res.status(200).json({ message: "Carrera eliminado correctamente" });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ message: "Error al eliminar carrera", error: error.message });
+    next(error);
   }
 };

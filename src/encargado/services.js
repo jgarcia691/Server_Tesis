@@ -75,6 +75,12 @@ export class EncargadoService {
         data: resultado,
       };
     } catch (error) {
+      if (
+        error.message.includes("UNIQUE constraint failed") &&
+        error.message.includes("Persona.email")
+      ) {
+        throw new Error("El correo electrónico ya está registrado.");
+      }
       console.error("Error al crear encargado:", error.message);
       throw new Error("No se pudo crear el encargado: " + error.message);
     }
@@ -104,12 +110,12 @@ export class EncargadoService {
         typeof data.email !== "string" ||
         typeof data.id_sede !== "number"
       ) {
-        throw new Error( // Se eliminó 'password' de aquí
-          "ci, telefono y sede deben ser números; nombre, apellido, email y telefono deben ser cadenas." // Se eliminó 'password' de aquí
+        throw new Error(
+          "ci y id_sede deben ser números; nombre, apellido, email y telefono deben ser cadenas." // Se eliminó 'password' de aquí
         );
       }
 
-      const updatedData = { ...data }; // No se maneja la contraseña aquí
+      const updatedData = { ...data };
 
       const resultado = await EncargadoRepository.update(ci, updatedData);
       console.log(
