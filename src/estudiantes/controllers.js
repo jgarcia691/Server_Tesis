@@ -45,14 +45,11 @@ export const createEstudianteControllers = async (req, res, next) => {
       !ci ||
       !ci_type ||
       !nombre ||
-      !apellido ||
-      !email ||
-      !telefono ||
-      !password
+      !apellido
     ) {
       return next(
         new Error(
-          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, email, telefono, password"
+          "Los siguientes campos son obligatorios: ci, ci_type, nombre, apellido"
         )
       );
     }
