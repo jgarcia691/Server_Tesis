@@ -10,13 +10,13 @@ import { ProfesorRepository } from "./repositories.js";
 export class ProfesorService {
   static async getAll() {
     try {
-      console.log("Obteniendo todos los profesores..."); // Corregido el mensaje de log
+      console.log("Obteniendo todos los profesores...");
       const profesor = await ProfesorRepository.getAll();
-      console.log("Profesores obtenidos:", profesor); // Corregido el mensaje de log
+      console.log("Profesores obtenidos:", profesor);
       return { status: "success", data: profesor };
     } catch (error) {
-      console.error("Error al obtener profesores:", error.message); // Corregido el mensaje de error
-      throw new Error("No se pudieron obtener los profesores."); // Corregido el mensaje de error
+      console.error("Error al obtener profesores:", error.message);
+      throw new Error("No se pudieron obtener los profesores.");
     }
   }
 
@@ -24,11 +24,18 @@ export class ProfesorService {
     try {
       console.log("Obteniendo profesor", ci);
       const profesor = await ProfesorRepository.getProfesor(ci);
+      
+      // 💡 MODIFICACIÓN: Lanzar error si no se encuentra
+      if (!profesor) {
+        throw new Error(`El profesor con CI ${ci} no existe.`);
+      }
+      
       console.log("profesor obtenida: ", profesor);
       return { status: "success", data: profesor };
     } catch (error) {
       console.error("Error al obtener profesor: ", error.message);
-      throw new Error("No se pudo obtener el profesor.");
+      // Relanzar el error (sea "no existe" u otro)
+      throw new Error(error.message);
     }
   }
 
@@ -67,13 +74,16 @@ export class ProfesorService {
       };
     } catch (error) {
       if (
+        error.message && // Añadida comprobación
         error.message.includes("UNIQUE constraint failed") &&
         error.message.includes("Persona.email")
       ) {
         throw new Error("El correo electrónico ya está registrado.");
       }
+      
       console.error("Error al crear el profesor:", error.message);
-      throw new Error("No se pudo crear el profesor: " + error.message);
+      // 💡 SOLUCIÓN: Relanzar el error original
+      throw error;
     }
   }
 
