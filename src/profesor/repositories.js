@@ -10,7 +10,7 @@ export class ProfesorRepository {
     try {
       const result = await db.execute({
         sql: `
-          SELECT p.ci, p.nombre, p.apellido, p.email, p.telefono
+          SELECT p.ci, p.ci_type, p.nombre, p.apellido, p.email, p.telefono
           FROM Persona p
           JOIN Profesor pr ON p.ci = pr.profesor_ci
         `,
@@ -26,7 +26,7 @@ export class ProfesorRepository {
     try {
       const result = await db.execute({
         sql: `
-          SELECT p.ci, p.nombre, p.apellido, p.email, p.telefono
+          SELECT p.ci, p.ci_type, p.nombre, p.apellido, p.email, p.telefono
           FROM Persona p
           JOIN Profesor pr ON p.ci = pr.profesor_ci
           WHERE p.ci = ?
@@ -60,23 +60,7 @@ export class ProfesorRepository {
     }
   }
 
-  static async update(ci, { nombre, apellido, email, telefono }) {
-    const trx = await db.transaction();
-    try {
-      await trx.execute({
-        sql: "UPDATE Persona SET nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
-        args: [nombre, apellido, email, telefono, ci],
-      });
-      // No hay campos específicos en Profesor para actualizar, solo la Persona.
-      await trx.commit();
-      return { success: true };
-    } catch (err) {
-      await trx.rollback();
-      console.error("Error en ProfesorRepository.update:", err.message);
-      throw err;
-    }
-  }
-
+  // 💡 SE ELIMINÓ LA FUNCIÓN 'update' DUPLICADA
   static async update(ci, { ci_type, nombre, apellido, email, telefono }) {
     const trx = await db.transaction();
     try {
@@ -84,7 +68,6 @@ export class ProfesorRepository {
         sql: "UPDATE Persona SET ci_type = ?, nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
         args: [ci_type, nombre, apellido, email, telefono, ci],
       });
-      // No hay campos específicos en Profesor para actualizar, solo la Persona.
       await trx.commit();
       return { success: true };
     } catch (err) {

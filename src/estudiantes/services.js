@@ -22,6 +22,7 @@ export class EstudianteService {
     try {
       const estudiante = await EstudianteRepository.getByCi(ci);
       if (!estudiante) {
+        // Esta excepción es esperada y se maneja en el controlador
         throw new Error(`El estudiante con CI ${ci} no existe.`);
       }
       return { status: "success", data: estudiante };
@@ -68,13 +69,16 @@ export class EstudianteService {
     } catch (error) {
       // Manejo específico para el error de email duplicado
       if (
+        error.message && // Añadida comprobación de seguridad
         error.message.includes("UNIQUE constraint failed") &&
         error.message.includes("Persona.email")
       ) {
         throw new Error("El correo electrónico ya está registrado.");
       }
-      console.error("Error en EstudianteService.create:", error.message);
-      throw new Error("No se pudo crear el estudiante: " + error.message);
+      
+      // 💡 SOLUCIÓN: Relanzar el error original de la base de datos (como Persona.ci)
+      // para que el controlador pueda leer 'error.code' y gestionarlo.
+      throw error;
     }
   }
 

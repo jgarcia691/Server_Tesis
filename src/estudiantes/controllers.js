@@ -20,18 +20,28 @@ export const getidControllers = async (req, res, next) => {
     const { ci } = req.params;
 
     if (!ci) {
-      return next(new Error("El campo ci es obligatorio"));
+      return res.status(400).json({ error: "El campo ci es obligatorio" });
     }
 
     const ciNumber = Number(ci);
 
     if (isNaN(ciNumber)) {
-      return next(new Error("El campo ci debe ser un número válido"));
+      return res.status(400).json({ error: "El campo ci debe ser un número válido" });
     }
 
     const estudiante = await EstudianteService.getByCi(ciNumber);
+    
+    if (!estudiante) {
+      return res.status(404).json({ error: "Estudiante no encontrado" });
+    }
+    
     res.status(200).json(estudiante);
   } catch (error) {
+    // Si el servicio lanza un error (como "no existe"), lo capturamos aquí
+    const errorMsg = (typeof error === 'string') ? error : (error.message || "");
+    if (errorMsg.includes("no existe")) {
+      return res.status(404).json({ error: errorMsg });
+    }
     next(error);
   }
 };
@@ -47,11 +57,9 @@ export const createEstudianteControllers = async (req, res, next) => {
       !nombre ||
       !apellido
     ) {
-      return next(
-        new Error(
-          "Los siguientes campos son obligatorios: ci, ci_type, nombre, apellido"
-        )
-      );
+      return res.status(400).json({ 
+        error: "Los siguientes campos son obligatorios: ci, ci_type, nombre, apellido" 
+      });
     }
 
     if (
@@ -63,13 +71,38 @@ export const createEstudianteControllers = async (req, res, next) => {
       typeof email !== "string" ||
       typeof password !== "string"
     ) {
-      return next(
-        new Error(
-          "ci  debe ser número; ci_type, telefono, nombre, apellido, email y password deben ser cadenas."
-        )
-      );
+      return res.status(400).json({ 
+        error: "ci debe ser número; ci_type, telefono, nombre, apellido, email y password deben ser cadenas." 
+      });
+    }
+    
+    // --- INICIO DE LA VALIDACIÓN DE DUPLICADOS (CORREGIDA) ---
+
+    let existingEstudiante = null;
+    try {
+      // 1. Intentamos buscar al estudiante
+      existingEstudiante = await EstudianteService.getByCi(ci);
+    } catch (findError) {
+      // 2. Capturamos el error "no existe" de forma robusta
+      const errorMsg = (typeof findError === 'string') ? findError : (findError.message || "");
+
+      if (errorMsg.includes("no existe")) {
+        existingEstudiante = null; // Confirmado: no existe, podemos crear.
+      } else {
+        // Si es un error diferente (ej. DB desconectada), lo lanzamos
+        throw findError;
+      }
     }
 
+    // 3. Si la búsqueda SÍ encontró un estudiante
+    if (existingEstudiante) {
+      // 409 Conflict: El recurso ya existe.
+      return res.status(409).json({ 
+        error: "Ya existe un estudiante registrado con esta cédula." 
+      });
+    }
+
+    // 4. Intentar crear la Persona y el Estudiante
     await EstudianteService.create({
       ci,
       ci_type,
@@ -79,9 +112,30 @@ export const createEstudianteControllers = async (req, res, next) => {
       telefono,
       password,
     });
+    
+    // 201 Created
     res.status(201).json({ message: "Estudiante creado correctamente" });
+
   } catch (error) {
-    next(error);
+    
+    // 5. Capturar el error de restricción ÚNICA de Persona
+    // (Ahora 'error.code' SÍ existirá gracias al cambio en services.js)
+    const errorMsg = (typeof error === 'string') ? error : (error.message || "");
+    const errorCode = error.code || "";
+
+    if (
+        (errorCode === 'SQLITE_CONSTRAINT' || errorMsg.includes('SQLITE_CONSTRAINT')) && 
+        errorMsg.includes('Persona.ci')
+      ) {
+      // 409 Conflict: La Persona ya existe (ej. es un Profesor)
+      return res.status(409).json({ 
+        error: "Esta cédula ya está registrada en el sistema (posiblemente como Profesor o Encargado). No se puede crear como nuevo estudiante.",
+        code: "DUPLICATE_PERSONA_CI"
+      });
+    }
+    
+    // 6. Si es otro tipo de error, pasarlo al manejador de errores (Error 500)
+    next(error); 
   }
 };
 
@@ -91,26 +145,22 @@ export const updateEstudianteControllers = async (req, res, next) => {
     const { ci_type, nombre, apellido, email, telefono } = req.body;
 
     if (!ci || !ci_type || !nombre || !apellido || !email || !telefono) {
-      return next(
-        new Error(
-          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, email, telefono"
-        )
-      );
+      return res.status(400).json({ 
+        error: "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, email, telefono" 
+      });
     }
 
     if (
       isNaN(ci) ||
       typeof ci_type !== "string" ||
-      typeof telefono !== "string" || // 'telefono' es TEXT en DB, debe ser string
+      typeof telefono !== "string" || 
       typeof nombre !== "string" ||
       typeof apellido !== "string" ||
       typeof email !== "string"
     ) {
-      return next(
-        new Error(
-          "ci debe ser un número válido; ci_type, nombre, apellido, email y telefono deben ser cadenas."
-        )
-      );
+      return res.status(400).json({ 
+        error: "ci debe ser un número válido; ci_type, nombre, apellido, email y telefono deben ser cadenas." 
+      });
     }
 
     await EstudianteService.update(ci, {
@@ -118,7 +168,7 @@ export const updateEstudianteControllers = async (req, res, next) => {
       nombre,
       apellido,
       email,
-      telefono: telefono, // Corregido el typo
+      telefono: telefono,
     });
     res.status(200).json({ message: "Estudiante actualizado correctamente" });
   } catch (error) {
@@ -130,16 +180,14 @@ export const deleteEstudianteControllers = async (req, res, next) => {
   try {
     const { ci } = req.params;
 
-    // La validación !ci es redundante si ci siempre viene de req.params
     if (isNaN(Number(ci))) {
-      // Validar que ci sea un número antes de intentar convertirlo
-      return next(new Error("El campo ci debe ser un número válido"));
+      return res.status(400).json({ error: "El campo ci debe ser un número válido" });
     }
 
     const ciNumber = Number(ci);
 
     if (isNaN(ciNumber)) {
-      return next(new Error("El campo ci debe ser un número válido"));
+      return res.status(400).json({ error: "El campo ci debe ser un número válido" });
     }
 
     await EstudianteService.delete(ciNumber);

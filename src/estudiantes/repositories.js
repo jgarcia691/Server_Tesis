@@ -61,18 +61,16 @@ export class EstudianteRepository {
   }
 
   static async update(ci, { ci_type, nombre, apellido, email, telefono }) {
-    const trx = await db.transaction(); // Iniciar transacción
+    const trx = await db.transaction(); 
     try {
       await trx.execute({
-        // Usar trx.execute
         sql: "UPDATE Persona SET ci_type = ?, nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
         args: [ci_type, nombre, apellido, email, telefono, ci],
       });
-      // No hay campos específicos en Estudiante para actualizar, solo la Persona.
-      await trx.commit(); // Confirmar transacción
+      await trx.commit(); 
       return { success: true };
     } catch (err) {
-      await trx.rollback(); // Revertir transacción en caso de error
+      await trx.rollback(); 
       console.error("Error en EstudianteRepository.update:", err.message);
       throw err;
     }
