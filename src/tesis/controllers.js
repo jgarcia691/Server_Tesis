@@ -207,6 +207,28 @@ export const uploadTesis = async (req, res, next) => {
     const archivo_pdf = Buffer.from(req.file.buffer);
     console.log(`DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`);
 
+    const idEstudiantesArray = ensureArray(id_estudiantes);
+    const autoresDetails = [];
+
+    for (const autorId of idEstudiantesArray) {
+      const autorIdNum = parseInt(autorId, 10);
+      if (isNaN(autorIdNum)) continue;
+
+      const result = await trx.execute({
+        sql: "SELECT ci_type, ci FROM Persona WHERE ci = ?",
+        args: [autorIdNum],
+      });
+
+      if (result.rows.length > 0) {
+        autoresDetails.push(result.rows[0]);
+      }
+    }
+
+    const folderName = autoresDetails
+      .map((autor) => `${autor.ci_type}-${autor.ci}`)
+      .join("_");
+    const teraboxPath = `/tesis/${folderName}`;
+
     let archivoUrl = null;
     let teraboxFsId = null;
     try {
@@ -214,7 +236,7 @@ export const uploadTesis = async (req, res, next) => {
       const details = await uploadBufferToTerabox(
         archivo_pdf,
         req.file.originalname,
-        "/tesis"
+        teraboxPath
       );
       teraboxFsId = details?.fs_id || null;
       if (teraboxFsId) {
@@ -246,7 +268,6 @@ export const uploadTesis = async (req, res, next) => {
     console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
 
     // Insertar Autores (Estudiantes)
-    const idEstudiantesArray = ensureArray(id_estudiantes);
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
       if (isNaN(autorId)) continue;
@@ -313,11 +334,34 @@ export const updateTesis = async (req, res, next) => {
     if (req.file && req.file.buffer) {
       console.log("DEBUG: Subiendo nuevo archivo PDF a Terabox...");
       const archivo_pdf = Buffer.from(req.file.buffer);
+      
+      const idEstudiantesArray = ensureArray(id_estudiantes);
+      const autoresDetails = [];
+
+      for (const autorId of idEstudiantesArray) {
+        const autorIdNum = parseInt(autorId, 10);
+        if (isNaN(autorIdNum)) continue;
+
+        const result = await trx.execute({
+          sql: "SELECT ci_type, ci FROM Persona WHERE ci = ?",
+          args: [autorIdNum],
+        });
+
+        if (result.rows.length > 0) {
+          autoresDetails.push(result.rows[0]);
+        }
+      }
+
+      const folderName = autoresDetails
+        .map((autor) => `${autor.ci_type}-${autor.ci}`)
+        .join("_");
+      const teraboxPath = `/tesis/${folderName}`;
+
       try {
         const details = await uploadBufferToTerabox(
           archivo_pdf,
           req.file.originalname,
-          "/tesis"
+          teraboxPath
         );
         teraboxFsId = details?.fs_id || null;
         if (teraboxFsId) {
@@ -356,7 +400,6 @@ export const updateTesis = async (req, res, next) => {
 
     // Actualizar Autores (Borrar e Insertar)
     await trx.execute({ sql: "DELETE FROM Alumno_tesis WHERE id_tesis = ?", args: [id] });
-    const idEstudiantesArray = ensureArray(id_estudiantes);
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
       if (isNaN(autorId)) continue;
