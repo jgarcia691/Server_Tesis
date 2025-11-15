@@ -40,3 +40,8 @@ export async function getDownloadLinkFromFsId(fs_id) {
   const response = await uploader.downloadFile(fs_id);
   return response;
 }
+
+export async function getListOfFiles(folder = "/") {
+  const response = await uploader.fetchFileList(folder);
+  return response;
+}

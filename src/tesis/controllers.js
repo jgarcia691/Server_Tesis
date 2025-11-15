@@ -2,7 +2,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import db from "../../config/db.js";
 import axios from "axios"; 
-import https from "https"; 
+import https from "https";
+import JSZip from "jszip";
 import {
   uploadBufferToTerabox,
   getDownloadLinkFromFsId,
@@ -10,7 +11,6 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 // --- Función Auxiliar para Normalizar Estado ---
 const normalizeEstado = (estadoBruto) => {
   if (!estadoBruto) return 'pendiente';
@@ -491,6 +491,211 @@ export const downloadTesis = async (req, res, next) => {
     }
   } catch (err) {
     next(err);
+  }
+};
+
+// --- DESCARGAR TODAS LAS TESIS ---
+export const downloadAllTesis = async (req, res, next) => {
+  try {
+    console.log("=== ENDPOINT downloadAllTesis LLAMADO ===");
+    console.log("URL:", req.url);
+    console.log("Method:", req.method);
+    console.log("Headers:", req.headers);
+    console.log("Iniciando la descarga de todas las tesis desde Terabox...");
+
+    // 1. Obtener todas las tesis de la base de datos que tengan terabox_fs_id
+    const result = await db.execute({
+      sql: "SELECT id, nombre, terabox_fs_id, archivo_url FROM Tesis WHERE terabox_fs_id IS NOT NULL AND terabox_fs_id != ''",
+    });
+
+    const tesis = result.rows || [];
+    console.log(`Se encontraron ${tesis.length} tesis con terabox_fs_id en la base de datos`);
+
+    if (tesis.length === 0) {
+      return res.status(404).json({ 
+        message: "No se encontraron tesis con archivos en Terabox para descargar." 
+      });
+    }
+
+    // 2. Crear el archivo ZIP
+    const zip = new JSZip();
+    let successCount = 0;
+    let errorCount = 0;
+
+    // 3. Descargar cada tesis
+    for (const tesisItem of tesis) {
+      const { id, nombre, terabox_fs_id, archivo_url } = tesisItem;
+      
+      try {
+        console.log(`Procesando tesis ID ${id}: ${nombre} (fs_id: ${terabox_fs_id})`);
+        
+        // Obtener el enlace de descarga desde Terabox
+        const linkData = await getDownloadLinkFromFsId(terabox_fs_id);
+        const downloadLink = linkData?.downloadLink || linkData?.dlink || linkData?.url;
+
+        if (!downloadLink) {
+          console.warn(`No se pudo obtener el enlace de descarga para la tesis ${id} (${nombre})`);
+          // Intentar usar archivo_url como respaldo
+          if (archivo_url) {
+            console.log(`Usando URL de respaldo para la tesis ${id}`);
+            try {
+              const response = await axios({
+                method: "GET",
+                url: archivo_url,
+                responseType: "arraybuffer",
+                httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                  "Referer": "https://www.terabox.com/",
+                  "Cookie": `ndus=${process.env.TERABOX_NDUS}`,
+                },
+                timeout: 60000,
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity,
+              });
+              
+              // Convertir a Buffer si no lo es ya
+              let fileData = response.data;
+              if (!Buffer.isBuffer(fileData)) {
+                fileData = Buffer.from(fileData);
+              }
+
+              // Validar que el archivo tenga contenido
+              if (!fileData || fileData.length === 0) {
+                throw new Error("El archivo descargado está vacío");
+              }
+              
+              // Limpiar el nombre del archivo para evitar caracteres problemáticos
+              const safeFileName = `${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf`;
+              zip.file(safeFileName, fileData);
+              successCount++;
+              console.log(`✓ Tesis ${id} añadida al ZIP usando URL de respaldo (${fileData.length} bytes)`);
+              continue;
+            } catch (backupError) {
+              console.error(`Error al descargar desde URL de respaldo para tesis ${id}:`, backupError.message);
+              errorCount++;
+              zip.file(`error_log_${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, '_')}.txt`, 
+                `No se pudo descargar esta tesis. Causa: No se pudo obtener enlace de Terabox ni usar URL de respaldo.`);
+              continue;
+            }
+          } else {
+            errorCount++;
+            zip.file(`error_log_${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, '_')}.txt`, 
+              `No se pudo descargar esta tesis. Causa: No se pudo obtener enlace de descarga.`);
+            continue;
+          }
+        }
+
+        // Descargar el archivo desde Terabox
+        console.log(`Descargando tesis ${id} desde: ${downloadLink.substring(0, 50)}...`);
+        const response = await axios({
+          method: "GET",
+          url: downloadLink,
+          responseType: "arraybuffer",
+          httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Referer": "https://www.terabox.com/",
+            "Cookie": `ndus=${process.env.TERABOX_NDUS}`,
+          },
+          timeout: 60000, // 60 segundos de timeout (aumentado para archivos grandes)
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+
+        // Convertir a Buffer si no lo es ya
+        let fileData = response.data;
+        if (!Buffer.isBuffer(fileData)) {
+          fileData = Buffer.from(fileData);
+        }
+
+        // Validar que el archivo tenga contenido
+        if (!fileData || fileData.length === 0) {
+          throw new Error("El archivo descargado está vacío");
+        }
+
+        // Limpiar el nombre del archivo para evitar caracteres problemáticos
+        const safeFileName = `${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf`;
+        zip.file(safeFileName, fileData);
+        successCount++;
+        console.log(`✓ Tesis ${id} añadida al ZIP: ${safeFileName} (${fileData.length} bytes)`);
+
+      } catch (error) {
+        errorCount++;
+        console.error(`Error procesando la tesis ${id} (${nombre}):`, error.message);
+        zip.file(`error_log_${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, '_')}.txt`, 
+          `No se pudo descargar esta tesis. Causa: ${error.message}`);
+      }
+    }
+
+    // 4. Verificar si hay archivos en el ZIP
+    const fileCount = Object.keys(zip.files).length;
+    if (fileCount === 0) {
+      return res.status(404).json({ 
+        message: "No se pudieron descargar archivos. Verifique los logs de error." 
+      });
+    }
+
+    console.log(`Proceso completado: ${successCount} exitosas, ${errorCount} con errores. Total archivos en ZIP: ${fileCount}`);
+
+    // 5. Generar el ZIP completo en memoria y enviarlo
+    console.log("Generando archivo ZIP...");
+    console.log(`Archivos en ZIP antes de generar: ${Object.keys(zip.files).join(', ')}`);
+    
+    const zipBuffer = await zip.generateAsync({ 
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
+      streamFiles: false // Asegurar que todos los archivos se procesen completamente
+    });
+
+    console.log(`ZIP generado: ${zipBuffer.length} bytes`);
+
+    // Validar que el ZIP tenga contenido
+    if (!zipBuffer || zipBuffer.length === 0) {
+      return res.status(500).json({ 
+        message: "Error al generar el archivo ZIP. El archivo está vacío." 
+      });
+    }
+
+    // Asegurar que zipBuffer sea un Buffer
+    const finalBuffer = Buffer.isBuffer(zipBuffer) ? zipBuffer : Buffer.from(zipBuffer);
+    
+    console.log(`Buffer final preparado: ${finalBuffer.length} bytes, tipo: ${Buffer.isBuffer(finalBuffer)}`);
+    console.log(`Primeros 10 bytes del ZIP (magic number): ${Array.from(finalBuffer.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+
+    // Validar que el ZIP tenga el magic number correcto (PK = 50 4B)
+    if (finalBuffer[0] !== 0x50 || finalBuffer[1] !== 0x4B) {
+      console.error("ERROR: El buffer generado no parece ser un ZIP válido!");
+      return res.status(500).json({ 
+        message: "Error al generar el archivo ZIP. El archivo generado no es válido." 
+      });
+    }
+
+    // Configurar headers para la descarga ANTES de enviar
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="todas_las_tesis.zip"`);
+    res.setHeader("Content-Length", finalBuffer.length);
+    // Headers CORS adicionales para asegurar la descarga
+    res.setHeader("Access-Control-Expose-Headers", "Content-Disposition, Content-Length");
+    
+    // Enviar el buffer completo
+    res.send(finalBuffer);
+    console.log("Archivo ZIP enviado correctamente.");
+
+  } catch (err) {
+    console.error("Error en la función downloadAllTesis:", err);
+    // Si los headers ya se enviaron, no podemos enviar JSON
+    if (res.headersSent) {
+      console.error("Headers ya enviados, no se puede enviar mensaje de error");
+      return;
+    }
+    // Enviar error como JSON solo si los headers no se han enviado
+    return res.status(500).json({
+      success: false,
+      message: "Error al generar el archivo ZIP.",
+      error: err.message,
+    });
   }
 };
 

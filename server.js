@@ -26,7 +26,11 @@ import handleErrors from "./src/middlewares/errors.js";
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: true, // Permitir cualquier origen (o especifica tu frontend)
+  credentials: true,
+  exposedHeaders: ['Content-Disposition', 'Content-Length', 'Content-Type']
+}));
 app.use(express.json());
 
 app.use("/api", tesisRoutes);
