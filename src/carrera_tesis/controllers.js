@@ -4,7 +4,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// controller.js
 
 import { CarreraTesisService } from "./services.js";
 
@@ -23,14 +22,12 @@ export const postCarreraTesisController = async (req, res, next) => {
 
     if (!id || !id_carrera || !id_tesis) {
       return res.status(400).json({
-        message: "Todos los campos son obligatorios: id, id_carrera, id_tesis",
+        message: "Todos los campos son obligatorios:",
       });
     }
 
     if (
-      typeof id !== "number" ||
-      typeof id_carrera !== "number" ||
-      typeof id_tesis !== "number"
+      typeof id !== "number" ||typeof id_carrera !== "number" ||typeof id_tesis !== "number"
     ) {
       return res.status(400).json({
         message: "Todos los campos deben ser números.",

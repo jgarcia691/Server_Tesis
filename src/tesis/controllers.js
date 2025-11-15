@@ -11,7 +11,7 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// --- Función Auxiliar para Normalizar Estado ---
+
 const normalizeEstado = (estadoBruto) => {
   if (!estadoBruto) return 'pendiente';
   const estadoLimpio = estadoBruto.toLowerCase().trim();
@@ -24,7 +24,6 @@ const normalizeEstado = (estadoBruto) => {
   return 'pendiente';
 };
 
-// --- Función Auxiliar para asegurar que los IDs sean un Array ---
 const ensureArray = (data) => {
   if (!data) return [];
   if (Array.isArray(data)) return data;
@@ -32,7 +31,6 @@ const ensureArray = (data) => {
   return [];
 };
 
-// --- OBTENER TODAS LAS TESIS (CON AUTORES Y JURADOS) ---
 export const getTesis = async (req, res, next) => {
   try {
     const result = await db.execute({
@@ -69,7 +67,6 @@ export const getTesis = async (req, res, next) => {
   }
 };
 
-// --- OBTENER TESIS POR ID (CON AUTORES Y JURADOS) ---
 export const getTesisById = async (req, res, next) => {
   const { id } = req.params;
   const sql = `
@@ -109,7 +106,6 @@ export const getTesisById = async (req, res, next) => {
   }
 };
 
-// --- OBTENER TESIS POR NOMBRE (BÚSQUEDA) ---
 export const getTesisByName = async (req, res, next) => {
   const { nombre } = req.params;
   const sql = `
@@ -153,7 +149,6 @@ export const getTesisByName = async (req, res, next) => {
   }
 };
 
-// --- OBTENER AUTORES DE UNA TESIS (Ruta restaurada) ---
 export const getTesisAutores = async (req, res, next) => {
   const { id } = req.params;
   const sql = `
@@ -172,21 +167,14 @@ export const getTesisAutores = async (req, res, next) => {
   }
 };
 
-// --- CREAR NUEVA TESIS (POST) ---
+
 export const uploadTesis = async (req, res, next) => {
   console.log("DEBUG: Iniciando uploadTesis");
   console.log("DEBUG: req.body:", req.body);
   console.log("DEBUG: req.file:", req.file);
 
   const {
-    nombre,
-    id_tutor,
-    id_encargado,
-    fecha,
-    estado,
-    id_sede,
-    id_estudiantes, // Array de autores
-    id_jurados,     // Array de jurados
+    nombre,id_tutor,id_encargado,fecha,estado,id_sede,id_estudiantes, id_jurados,     
   } = req.body;
 
   if (!id_sede) {
@@ -267,7 +255,7 @@ export const uploadTesis = async (req, res, next) => {
     const newTesisId = Number(result.lastInsertRowid);
     console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
 
-    // Insertar Autores (Estudiantes)
+    
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
       if (isNaN(autorId)) continue;
@@ -277,7 +265,7 @@ export const uploadTesis = async (req, res, next) => {
       });
     }
 
-    // Insertar Jurados (Profesores)
+    
     const idJuradosArray = ensureArray(id_jurados);
     for (const juradoIdStr of idJuradosArray) {
       const juradoId = parseInt(juradoIdStr, 10);
@@ -303,7 +291,7 @@ export const uploadTesis = async (req, res, next) => {
   }
 };
 
-// --- ACTUALIZAR TESIS (PUT) ---
+
 export const updateTesis = async (req, res, next) => {
   const { id } = req.params; 
   console.log(`DEBUG: Iniciando updateTesis para ID: ${id}`);
@@ -316,8 +304,8 @@ export const updateTesis = async (req, res, next) => {
     fecha,
     estado,
     id_sede,
-    id_estudiantes, // Array de autores
-    id_jurados,     // Array de jurados
+    id_estudiantes, 
+    id_jurados,     
   } = req.body;
 
   const idSedeNum = parseInt(id_sede, 10);
@@ -398,7 +386,7 @@ export const updateTesis = async (req, res, next) => {
       return res.status(404).json({ message: "Tesis no encontrada." });
     }
 
-    // Actualizar Autores (Borrar e Insertar)
+    
     await trx.execute({ sql: "DELETE FROM Alumno_tesis WHERE id_tesis = ?", args: [id] });
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
@@ -409,7 +397,7 @@ export const updateTesis = async (req, res, next) => {
       });
     }
 
-    // Actualizar Jurados (Borrar e Insertar)
+    
     await trx.execute({ sql: "DELETE FROM Jurado WHERE id_tesis = ?", args: [id] }); 
     const idJuradosArray = ensureArray(id_jurados);
     for (const juradoIdStr of idJuradosArray) {
@@ -430,7 +418,7 @@ export const updateTesis = async (req, res, next) => {
   }
 };
 
-// --- DESCARGAR TESIS ---
+
 export const downloadTesis = async (req, res, next) => {
   const { id } = req.params;
   console.log("ID recibido:", id);
@@ -467,7 +455,7 @@ export const downloadTesis = async (req, res, next) => {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           "Referer": "https://www.terabox.com/",
-          // 💡 SOLUCIÓN: La Cookie de autenticación fue restaurada aquí
+          
           "Cookie": `ndus=${process.env.TERABOX_NDUS}`, 
         },
       });
@@ -494,25 +482,25 @@ export const downloadTesis = async (req, res, next) => {
   }
 };
 
-// --- ELIMINAR TESIS ---
+
 export const deleteTesis = async (req, res, next) => {
   const { id } = req.params;
   const trx = await db.transaction(); 
   
   try {
-    // Borrar referencias de autores
+    
     await trx.execute({
       sql: "DELETE FROM Alumno_tesis WHERE id_tesis = ?",
       args: [id]
     });
     
-    // Borrar referencias de jurados
+   
     await trx.execute({
       sql: "DELETE FROM Jurado WHERE id_tesis = ?", 
       args: [id]
     });
 
-    // Borrar la tesis principal
+    
     const result = await trx.execute({
       sql: "DELETE FROM Tesis WHERE id = ?",
       args: [id]

@@ -34,9 +34,7 @@ export const postcarreracontroller = async (req, res, next) => {
         .json({ message: "Todos los campos son obligatorios" });
     }
     if (
-      typeof codigo !== "number" ||
-      typeof nombre !== "string" ||
-      typeof campo !== "string"
+      typeof codigo !== "number" ||typeof nombre !== "string" ||typeof campo !== "string"
     ) {
       return res.status(400).json({
         message: "codigo debe ser números, nombre y campo deben ser cadenas",

@@ -9,7 +9,6 @@ import { initDb } from "./config/initDb.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Importar rutas usando rutas absolutas
 import tesisRoutes from "./src/tesis/routes.js";
 import routesEncargado from "./src/encargado/routes.js";
 import routesCarrera from "./src/carrera/routes.js";
@@ -41,7 +40,7 @@ app.use("/api/alumno_tesis", alumno_tesisroutes);
 app.use("/api/carrera_tesis", carrera_tesisroutes);
 app.use("/api", loginroute);
 
-// Error handling middleware
+
 app.use(handleErrors);
 
 const PORT = process.env.PORT || 8080;

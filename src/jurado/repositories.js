@@ -16,7 +16,7 @@ export class JuradoRepository {
       });
       return result.rows.length ? result.rows[0] : null;
     } catch (err) {
-      console.error("Error en JuradoRepository.getJurado:", err.message);
+      console.error("Error en JuradoRepository", err.message);
       throw err;
     }
   }

@@ -37,9 +37,7 @@ export const postAlumnoCarreraController = async (req, res, next) => {
     const { codigo, id_estudiante, id_carrera } = req.body;
 
     if (
-      typeof codigo !== "number" ||
-      typeof id_estudiante !== "number" ||
-      typeof id_carrera !== "number"
+      typeof codigo !== "number" ||typeof id_estudiante !== "number" ||typeof id_carrera !== "number"
     ) {
       return res.status(400).json({
         message: "codigo, id_estudiante e id_carrera deben ser números",
@@ -47,9 +45,7 @@ export const postAlumnoCarreraController = async (req, res, next) => {
     }
 
     const result = await AlumnoCarreraService.create({
-      codigo,
-      id_estudiante,
-      id_carrera,
+      codigo,id_estudiante,id_carrera,
     });
     res.status(201).json(result);
   } catch (error) {

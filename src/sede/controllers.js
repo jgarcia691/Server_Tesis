@@ -56,9 +56,7 @@ export const postsedecontroller = async (req, res, next) => {
     const idNumber = Number(id);
     if (
       isNaN(idNumber) ||
-      typeof telefono !== "string" ||
-      typeof nombre !== "string" ||
-      typeof Direccion !== "string"
+      typeof telefono !== "string" ||typeof nombre !== "string" ||typeof Direccion !== "string"
     ) {
       return res.status(400).json({
         message:

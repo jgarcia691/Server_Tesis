@@ -34,25 +34,12 @@ export const getencargadocontroller = async (req, res, next) => {
 export const postencargadocontroller = async (req, res, next) => {
   try {
     const {
-      ci,
-      ci_type,
-      nombre,
-      apellido,
-      telefono,
-      email,
-      password,
-      id_sede,
+      ci,ci_type,nombre,
+      apellido,telefono,email,password,id_sede,
     } = req.body;
 
     if (
-      !ci ||
-      !ci_type ||
-      !nombre ||
-      !apellido ||
-      !telefono ||
-      !email ||
-      !password ||
-      !id_sede
+      !ci ||!ci_type ||!nombre ||!apellido ||!telefono ||!email ||!password ||!id_sede
     ) {
       return next(
         new Error(
@@ -68,16 +55,7 @@ export const postencargadocontroller = async (req, res, next) => {
         )
       );
     }
-    await EncargadoService.create({
-      ci,
-      ci_type,
-      nombre,
-      apellido,
-      telefono,
-      email,
-      password,
-      id_sede,
-    });
+    await EncargadoService.create({ci,ci_type,nombre,apellido,telefono,email,password,id_sede,});
     res.status(201).json({ message: "Encargado creado correctamente" });
   } catch (error) {
     next(error);
@@ -87,7 +65,7 @@ export const postencargadocontroller = async (req, res, next) => {
 export const putencargadocontroller = async (req, res, next) => {
   try {
     const ci = Number(req.params.ci);
-    const { nombre, apellido, telefono, email, id_sede } = req.body; // No se espera 'password' aquí
+    const { nombre, apellido, telefono, email, id_sede } = req.body; 
 
     if (!ci || !nombre || !apellido || !email || !telefono || !id_sede) {
       return next(
@@ -101,13 +79,9 @@ export const putencargadocontroller = async (req, res, next) => {
       return next(new Error("El CI y el id_sede deben ser números válidos."));
     }
 
-    // ⚠️ La actualización de contraseña debe ser un endpoint separado.
+   
     await EncargadoService.update(ci, {
-      nombre,
-      apellido,
-      telefono,
-      email,
-      id_sede,
+      nombre,apellido,telefono,email,id_sede,
     });
 
     res.status(200).json({ message: "Encargado actualizado correctamente" });
@@ -120,9 +94,9 @@ export const deletencargadocontroller = async (req, res, next) => {
   try {
     const { ci } = req.params;
 
-    // La validación !ci es redundante si ci siempre viene de req.params
+    
     if (isNaN(Number(ci))) {
-      // Validar que ci sea un número antes de intentar convertirlo
+      
       return next(new Error("El campo ci debe ser un número válido"));
     }
 

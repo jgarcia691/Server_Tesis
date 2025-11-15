@@ -38,7 +38,7 @@ export const postAlumnoTesisController = async (req, res, next) => {
 
     if (!id_estudiante || !id_tesis) {
       return res.status(400).json({
-        message: "Todos los campos son obligatorios:id_estudiante, id_tesis",
+        message: "Todos los campos son obligatorios",
       });
     }
 
