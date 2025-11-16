@@ -40,10 +40,10 @@ export const postprofesorcontroller = async (req, res, next) => {
   try {
     const { ci, ci_type, nombre, apellido, email, telefono, password } = req.body;
     
-    if (!ci || !ci_type || !nombre || !apellido) {
+    if (!ci || !ci_type || !nombre || !apellido|| !email || !telefono || !password) {
       return res
         .status(400)
-        .json({ error: "Los campos ci, ci_type, nombre y apellido son obligatorios." });
+        .json({ error: "Los campos son obligatorios." });
     }
     
     if (

@@ -35,6 +35,10 @@ const ensureArray = (data) => {
 // --- OBTENER TODAS LAS TESIS (CON AUTORES Y JURADOS) ---
 export const getTesis = async (req, res, next) => {
   try {
+    const page = parseInt(req.query.page) || 1;      
+    const limit = parseInt(req.query.limit) || 20;    
+    const offset = (page - 1) * limit;
+
     const result = await db.execute({
       sql: `
         SELECT
@@ -53,7 +57,9 @@ export const getTesis = async (req, res, next) => {
         LEFT JOIN Profesor pr ON tj.id_profesor = pr.profesor_ci 
         LEFT JOIN Persona p_jur ON pr.profesor_ci = p_jur.ci
         GROUP BY t.id
+        LIMIT ? OFFSET ?
       `,
+      args: [limit, offset],
     });
 
     const tesisConAutores = result.rows.map((tesis) => ({
@@ -62,14 +68,18 @@ export const getTesis = async (req, res, next) => {
       jurados: JSON.parse(tesis.jurados || "[]"),
     }));
 
-    console.log("Resultado obtenido:", tesisConAutores.length);
-    res.json(tesisConAutores);
+    res.json({
+      page,
+      limit,
+      total: tesisConAutores.length,
+      data: tesisConAutores,
+    });
   } catch (err) {
     next(err);
   }
 };
 
-// --- OBTENER TESIS POR ID (CON AUTORES Y JURADOS) ---
+
 export const getTesisById = async (req, res, next) => {
   const { id } = req.params;
   const sql = `
@@ -109,9 +119,13 @@ export const getTesisById = async (req, res, next) => {
   }
 };
 
-// --- OBTENER TESIS POR NOMBRE (BÚSQUEDA) ---
+
 export const getTesisByName = async (req, res, next) => {
   const { nombre } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = (page - 1) * limit;
+
   const sql = `
     SELECT
       t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado,
@@ -130,11 +144,17 @@ export const getTesisByName = async (req, res, next) => {
     LEFT JOIN Persona p_jur ON pr.profesor_ci = p_jur.ci
     WHERE t.nombre LIKE ?
     GROUP BY t.id
+    LIMIT ? OFFSET ?
   `;
-  const searchTerm = `%${nombre}%`; 
+
+  const searchTerm = `%${nombre}%`;
 
   try {
-    const result = await db.execute({ sql: sql, args: [searchTerm] });
+    const result = await db.execute({
+      sql,
+      args: [searchTerm, limit, offset],
+    });
+
     const rows = result.rows || [];
 
     if (rows.length === 0) {
@@ -147,7 +167,12 @@ export const getTesisByName = async (req, res, next) => {
       jurados: JSON.parse(tesis.jurados || "[]"),
     }));
 
-    res.json(tesisConAutores);
+    res.json({
+      page,
+      limit,
+      total: tesisConAutores.length,
+      data: tesisConAutores,
+    });
   } catch (err) {
     next(err);
   }
@@ -185,24 +210,29 @@ export const uploadTesis = async (req, res, next) => {
     fecha,
     estado,
     id_sede,
-    id_estudiantes, // Array de autores
-    id_jurados,     // Array de jurados
+    id_estudiantes,
+    id_jurados,
   } = req.body;
 
-  if (!id_sede) {
-    return next(new Error("El campo id_sede es obligatorio."));
+  // Validaciones obligatorias
+  if (!nombre || !id_tutor || !id_encargado || !fecha || !estado || !id_sede || !id_estudiantes || !id_jurados) {
+    return next(new Error("Todos los campos son obligatorios."));
   }
+
   const idSedeNum = parseInt(id_sede, 10);
-  if (isNaN(idSedeNum)) {
-    return next(new Error("El campo id_sede debe ser un número."));
+  const idTutorNum = parseInt(id_tutor, 10);
+  const idEncargadoNum = parseInt(id_encargado, 10);
+
+  if (isNaN(idSedeNum) || isNaN(idTutorNum) || isNaN(idEncargadoNum)) {
+    return next(new Error("Los campos deben ser números."));
   }
-  
+
   if (!req.file || !req.file.buffer) {
-    return next(new Error("El archivo PDF es obligatorio"));
+    return next(new Error("El archivo PDF es obligatorio."));
   }
-  
-  const trx = await db.transaction(); 
-  
+
+  const trx = await db.transaction();
+
   try {
     const archivo_pdf = Buffer.from(req.file.buffer);
     console.log(`DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`);
@@ -249,13 +279,13 @@ export const uploadTesis = async (req, res, next) => {
     }
 
     const sqlTesis = `
-        INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
-      parseInt(id_encargado, 10),
+      idEncargadoNum,
       idSedeNum,
-      parseInt(id_tutor, 10),
+      idTutorNum,
       nombre,
       fecha,
       normalizeEstado(estado),
@@ -267,7 +297,6 @@ export const uploadTesis = async (req, res, next) => {
     const newTesisId = Number(result.lastInsertRowid);
     console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
 
-    // Insertar Autores (Estudiantes)
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
       if (isNaN(autorId)) continue;
@@ -277,19 +306,18 @@ export const uploadTesis = async (req, res, next) => {
       });
     }
 
-    // Insertar Jurados (Profesores)
     const idJuradosArray = ensureArray(id_jurados);
     for (const juradoIdStr of idJuradosArray) {
       const juradoId = parseInt(juradoIdStr, 10);
       if (isNaN(juradoId)) continue;
       await trx.execute({
-        sql: "INSERT INTO Jurado (id_tesis, id_profesor) VALUES (?, ?)", 
+        sql: "INSERT INTO Jurado (id_tesis, id_profesor) VALUES (?, ?)",
         args: [newTesisId, juradoId]
       });
     }
-    
-    await trx.commit(); 
-    
+
+    await trx.commit();
+
     console.log("DEBUG: Proceso de subida de tesis finalizado con éxito.");
     return res.json({
       message: "Tesis subida correctamente y autor asociado",
@@ -298,7 +326,7 @@ export const uploadTesis = async (req, res, next) => {
       terabox_fs_id: teraboxFsId,
     });
   } catch (error) {
-    await trx.rollback(); 
+    await trx.rollback();
     next(error);
   }
 };
@@ -316,8 +344,8 @@ export const updateTesis = async (req, res, next) => {
     fecha,
     estado,
     id_sede,
-    id_estudiantes, // Array de autores
-    id_jurados,     // Array de jurados
+    id_estudiantes, 
+    id_jurados,     
   } = req.body;
 
   const idSedeNum = parseInt(id_sede, 10);
