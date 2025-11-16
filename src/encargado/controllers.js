@@ -56,7 +56,7 @@ export const postencargadocontroller = async (req, res, next) => {
     ) {
       return next(
         new Error(
-          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, telefono, email, password, id_sede"
+          "Todos los campos son obligatorios"
         )
       );
     }
