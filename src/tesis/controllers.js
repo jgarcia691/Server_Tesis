@@ -140,15 +140,19 @@ export const getTesis = async (req, res, next) => {
     console.log("DEBUG: Argumentos de query:", queryArgs);
 
     // Construir la consulta base con JOINs necesarios
-    // Siempre incluimos los JOINs para obtener autores y jurados
+    // Siempre incluimos los JOINs para obtener autores, jurados, encargado y tutor
     const baseQuery = `
       FROM Tesis t
       LEFT JOIN Alumno_tesis at ON t.id = at.id_tesis
       LEFT JOIN Estudiante e ON at.id_estudiante = e.estudiante_ci
       LEFT JOIN Persona p_aut ON e.estudiante_ci = p_aut.ci
       LEFT JOIN Jurado tj ON t.id = tj.id_tesis 
-      LEFT JOIN Profesor pr ON tj.id_profesor = pr.profesor_ci 
-      LEFT JOIN Persona p_jur ON pr.profesor_ci = p_jur.ci
+      LEFT JOIN Profesor pr_jur ON tj.id_profesor = pr_jur.profesor_ci 
+      LEFT JOIN Persona p_jur ON pr_jur.profesor_ci = p_jur.ci
+      LEFT JOIN Encargado enc ON t.id_encargado = enc.encargado_ci
+      LEFT JOIN Persona p_enc ON enc.encargado_ci = p_enc.ci
+      LEFT JOIN Profesor pr_tut ON t.id_tutor = pr_tut.profesor_ci
+      LEFT JOIN Persona p_tut ON pr_tut.profesor_ci = p_tut.ci
       ${whereClause}
     `;
 
@@ -168,7 +172,16 @@ export const getTesis = async (req, res, next) => {
     const result = await db.execute({
       sql: `
         SELECT
-          t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado, t.archivo_url,
+          t.id, t.nombre, t.id_sede, t.fecha, t.estado, t.archivo_url,
+          MAX(JSON_OBJECT(
+            'ci', p_enc.ci, 'nombre', p_enc.nombre, 'apellido', p_enc.apellido, 
+            'ci_type', p_enc.ci_type, 'email', p_enc.email, 'telefono', p_enc.telefono,
+            'id_sede', enc.id_sede
+          )) as encargado,
+          MAX(JSON_OBJECT(
+            'ci', p_tut.ci, 'nombre', p_tut.nombre, 'apellido', p_tut.apellido,
+            'ci_type', p_tut.ci_type, 'email', p_tut.email, 'telefono', p_tut.telefono
+          )) as tutor,
           JSON_GROUP_ARRAY(DISTINCT JSON_OBJECT(
             'ci', p_aut.ci, 'nombre', p_aut.nombre, 'apellido', p_aut.apellido, 'ci_type', p_aut.ci_type
           )) FILTER (WHERE p_aut.ci IS NOT NULL) as autores,
@@ -187,6 +200,8 @@ export const getTesis = async (req, res, next) => {
 
     const tesisConAutores = result.rows.map((tesis) => ({
       ...tesis,
+      encargado: tesis.encargado ? JSON.parse(tesis.encargado) : null,
+      tutor: tesis.tutor ? JSON.parse(tesis.tutor) : null,
       autores: JSON.parse(tesis.autores || "[]"),
       jurados: JSON.parse(tesis.jurados || "[]"),
     }));
@@ -269,20 +284,33 @@ export const getTesisByName = async (req, res, next) => {
 
     const sql = `
     SELECT
-      t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado,
+      t.id, t.nombre, t.id_sede, t.fecha, t.estado,
+      MAX(JSON_OBJECT(
+        'ci', p_enc.ci, 'nombre', p_enc.nombre, 'apellido', p_enc.apellido, 
+        'ci_type', p_enc.ci_type, 'email', p_enc.email, 'telefono', p_enc.telefono,
+        'id_sede', enc.id_sede
+      )) as encargado,
+      MAX(JSON_OBJECT(
+        'ci', p_tut.ci, 'nombre', p_tut.nombre, 'apellido', p_tut.apellido,
+        'ci_type', p_tut.ci_type, 'email', p_tut.email, 'telefono', p_tut.telefono
+      )) as tutor,
       JSON_GROUP_ARRAY(DISTINCT JSON_OBJECT(
         'ci', p_aut.ci, 'nombre', p_aut.nombre, 'apellido', p_aut.apellido
       )) FILTER (WHERE p_aut.ci IS NOT NULL) as autores,
       JSON_GROUP_ARRAY(DISTINCT JSON_OBJECT(
-        'ci', p_jur.ci, 'nombre', p_jur.nombre, 'apellido', p_jur.apellido
+        'ci', p_jur.ci, 'nombre', p_jur.nombre, 'apellido', p_jur.apellido, 'ci_type', p_jur.ci_type
       )) FILTER (WHERE p_jur.ci IS NOT NULL) as jurados
     FROM Tesis t
     LEFT JOIN Alumno_tesis at ON t.id = at.id_tesis
     LEFT JOIN Estudiante e ON at.id_estudiante = e.estudiante_ci
     LEFT JOIN Persona p_aut ON e.estudiante_ci = p_aut.ci
     LEFT JOIN Jurado tj ON t.id = tj.id_tesis 
-    LEFT JOIN Profesor pr ON tj.id_profesor = pr.profesor_ci 
-    LEFT JOIN Persona p_jur ON pr.profesor_ci = p_jur.ci
+    LEFT JOIN Profesor pr_jur ON tj.id_profesor = pr_jur.profesor_ci 
+    LEFT JOIN Persona p_jur ON pr_jur.profesor_ci = p_jur.ci
+    LEFT JOIN Encargado enc ON t.id_encargado = enc.encargado_ci
+    LEFT JOIN Persona p_enc ON enc.encargado_ci = p_enc.ci
+    LEFT JOIN Profesor pr_tut ON t.id_tutor = pr_tut.profesor_ci
+    LEFT JOIN Persona p_tut ON pr_tut.profesor_ci = p_tut.ci
     WHERE t.nombre LIKE ?
     GROUP BY t.id
     LIMIT ? OFFSET ?
@@ -297,6 +325,8 @@ export const getTesisByName = async (req, res, next) => {
 
     const tesisConAutores = rows.map((tesis) => ({
       ...tesis,
+      encargado: tesis.encargado ? JSON.parse(tesis.encargado) : null,
+      tutor: tesis.tutor ? JSON.parse(tesis.tutor) : null,
       autores: JSON.parse(tesis.autores || "[]"),
       jurados: JSON.parse(tesis.jurados || "[]"),
     }));
