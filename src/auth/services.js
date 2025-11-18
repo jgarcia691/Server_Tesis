@@ -17,7 +17,6 @@ const LoginService = {
       }
 
       console.log("Comparando clave...");
-      console.log("Hash guardado:", user.password);
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
@@ -41,12 +40,16 @@ const LoginService = {
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      return await LoginRepository.createUser(user_ci, user_type, hashedPassword);
+      return await LoginRepository.createUser(
+        user_ci,
+        user_type,
+        hashedPassword
+      );
     } catch (error) {
       console.error("💥 Error en LoginService.register:", error);
       throw error;
     }
-  }
+  },
 };
 
 export default LoginService;

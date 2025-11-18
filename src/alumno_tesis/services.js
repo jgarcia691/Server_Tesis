@@ -13,7 +13,6 @@ export class AlumnoTesisService {
     try {
       console.log("Obteniendo todos los registros de Alumno_tesis...");
       const data = await AlumnoTesisRepository.getAll();
-      console.log("Registros obtenidos:", data);
       return { status: "success", data };
     } catch (error) {
       console.error("Error al obtener registros:", error.message);
@@ -43,7 +42,7 @@ export class AlumnoTesisService {
 
       if (!data.id_estudiante || !data.id_tesis) {
         throw new Error(
-          "Todos los campos son obligatorios: id_estudiante, id_tesis",
+          "Todos los campos son obligatorios: id_estudiante, id_tesis"
         );
       }
 

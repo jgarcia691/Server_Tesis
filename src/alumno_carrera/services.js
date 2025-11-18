@@ -11,7 +11,6 @@ export class AlumnoCarreraService {
     try {
       console.log("Obteniendo todos los registros de Alumno_carrera...");
       const result = await AlumnoCarreraRepository.getAll();
-      console.log("Registros obtenidos:", result);
       return { status: "success", data: result };
     } catch (error) {
       console.error("Error al obtener registros:", error.message);

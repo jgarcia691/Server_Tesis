@@ -13,7 +13,6 @@ export class CarreraTesisService {
     try {
       console.log("Obteniendo todos los registros de Carrera_tesis...");
       const data = await CarreraTesisRepository.getAll();
-      console.log("Registros obtenidos:", data);
       return { status: "success", data };
     } catch (error) {
       console.error("Error al obtener registros:", error.message);

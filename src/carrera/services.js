@@ -11,7 +11,6 @@ export class CarreraService {
     try {
       console.log("Obteniendo todas las carreras...");
       const carrera = await CarreraRepository.getAll();
-      console.log("Carreras obtenidas:", carrera);
       return { status: "success", data: carrera };
     } catch (error) {
       console.error("Error al obtener Carreras:", error.message);
