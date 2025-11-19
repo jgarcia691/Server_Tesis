@@ -9,6 +9,7 @@ import {
   uploadBufferToTerabox,
   getDownloadLinkFromFsId,
 } from "../../config/terabox.js";
+import { updateTesisStatus as updateTesisStatusService } from "./services.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1327,3 +1328,23 @@ export const deleteTesis = async (req, res, next) => {
     next(err);
   }
 };
+
+export const updateTesisStatus = async (req, res, next) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+
+  if (!estado) {
+    return res.status(400).json({ message: "El campo 'estado' es requerido." });
+  }
+
+  try {
+    const result = await updateTesisStatusService(id, estado);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Tesis no encontrada." });
+    }
+    res.status(200).json({ message: "Estado de la tesis actualizado correctamente." });
+  } catch (error) {
+    next(error);
+  }
+};
+

@@ -13,6 +13,7 @@ import {
   getDownloadProgress,
   streamDownloadProgress,
   downloadResult,
+  updateTesisStatus,
 } from "./controllers.js"; // Asegúrate de que la ruta es correcta
 
 const router = express.Router();
@@ -39,5 +40,6 @@ router.get("/tesis/:id", getTesisById); // Obtener una tesis por ID (DEBE ir al 
 router.post("/tesis", upload.single("archivo_pdf"), uploadTesis); // Subir una nueva tesis con PDF
 router.delete("/tesis/:id", deleteTesis); // Eliminar una tesis
 router.put("/tesis/:id", upload.single("archivo_pdf"), updateTesis); // Actualizar una tesis
+router.put("/tesis/:id/status", updateTesisStatus);
 
 export default router;
