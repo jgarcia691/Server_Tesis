@@ -207,7 +207,13 @@ export const getTesis = async (req, res, next) => {
           )) FILTER (WHERE p_jur.ci IS NOT NULL) as jurados
         ${baseQuery}
         GROUP BY t.id
-        ORDER BY ` + (req.query.sortBy === 'nombre' ? 't.nombre' : req.query.sortBy === 'fecha' ? 't.fecha' : 't.id') + " " + (req.query.order === 'asc' ? 'ASC' : 'DESC') + `
+        ORDER BY ${
+          req.query.sortBy === 'nombre' 
+            ? 't.nombre COLLATE NOCASE' 
+            : req.query.sortBy === 'fecha' 
+              ? 't.fecha' 
+              : 't.id'
+        } ${req.query.order === 'asc' ? 'ASC' : 'DESC'}
         LIMIT ? OFFSET ?
       `,
       args: [...queryArgs, limit, offset],
@@ -704,29 +710,24 @@ export const downloadTesis = async (req, res, next) => {
       const response = await axios({
         method: "GET",
         url: fileLink,
-        responseType: "stream",
+        responseType: "arraybuffer",
         httpsAgent: new https.Agent({ rejectUnauthorized: false }),
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
           Referer: "https://www.terabox.com/",
-          // 💡 SOLUCIÓN: La Cookie de autenticación fue restaurada aquí
           Cookie: `ndus=${process.env.TERABOX_NDUS}`,
         },
       });
 
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="tesis_${id}.pdf"`
-      );
-      response.data.pipe(res);
+      const buffer = Buffer.from(response.data);
 
-      response.data.on("error", (streamError) => {
-        if (!res.headersSent) {
-          return next(streamError);
-        }
-      });
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="tesis_${id}.pdf"`);
+      res.setHeader("Content-Length", buffer.length);
+      res.setHeader("Content-Transfer-Encoding", "binary");
+      
+      res.send(buffer);
     } else if (row.archivo_url) {
       return res.redirect(row.archivo_url);
     } else {
