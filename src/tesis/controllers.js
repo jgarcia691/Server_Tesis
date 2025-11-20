@@ -682,11 +682,17 @@ export const downloadTesis = async (req, res, next) => {
 
   try {
     const result = await db.execute({
-      sql: "SELECT archivo_url, terabox_fs_id FROM Tesis WHERE id = ?",
+      sql: "SELECT nombre, archivo_url, terabox_fs_id FROM Tesis WHERE id = ?",
       args: [id],
     });
     const row = result?.rows?.[0];
     if (!row) return res.status(404).json({ message: "Tesis no encontrada" });
+
+    // Sanitizar el nombre de la tesis para usarlo como nombre de archivo
+    const safeFileName = row.nombre
+      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_')
+      .replace(/\s+/g, '_')
+      .substring(0, 200); // Limitar longitud
 
     if (row.terabox_fs_id) {
       console.log("Obteniendo enlace de descarga...");
@@ -723,7 +729,7 @@ export const downloadTesis = async (req, res, next) => {
       const buffer = Buffer.from(response.data);
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="tesis_${id}.pdf"`);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
       res.setHeader("Content-Length", buffer.length);
       res.setHeader("Content-Transfer-Encoding", "binary");
       
