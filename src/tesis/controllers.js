@@ -207,7 +207,7 @@ export const getTesis = async (req, res, next) => {
           )) FILTER (WHERE p_jur.ci IS NOT NULL) as jurados
         ${baseQuery}
         GROUP BY t.id
-        ORDER BY t.id DESC
+        ORDER BY ` + (req.query.sortBy === 'nombre' ? 't.nombre' : req.query.sortBy === 'fecha' ? 't.fecha' : 't.id') + " " + (req.query.order === 'asc' ? 'ASC' : 'DESC') + `
         LIMIT ? OFFSET ?
       `,
       args: [...queryArgs, limit, offset],
