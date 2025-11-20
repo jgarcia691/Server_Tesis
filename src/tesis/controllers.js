@@ -185,10 +185,11 @@ export const getTesis = async (req, res, next) => {
     console.log("DEBUG: Total de registros después de filtros:", total);
 
     // Construir la consulta principal con filtros
+    // 💡 CORRECCIÓN: Se añadieron t.id_encargado y t.id_tutor al SELECT
     const result = await db.execute({
       sql: `
         SELECT
-          t.id, t.nombre, t.id_sede, t.fecha, t.estado, t.archivo_url,
+          t.id, t.nombre, t.id_sede, t.id_encargado, t.id_tutor, t.fecha, t.estado, t.archivo_url,
           MAX(JSON_OBJECT(
             'ci', p_enc.ci, 'nombre', p_enc.nombre, 'apellido', p_enc.apellido, 
             'ci_type', p_enc.ci_type, 'email', p_enc.email, 'telefono', p_enc.telefono,
@@ -236,6 +237,7 @@ export const getTesis = async (req, res, next) => {
 
 export const getTesisById = async (req, res, next) => {
   const { id } = req.params;
+  // 💡 CORRECCIÓN: Asegurando que id_encargado y id_tutor estén en el SELECT también aquí
   const sql = `
     SELECT
       t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado, t.archivo_url,
@@ -298,9 +300,10 @@ export const getTesisByName = async (req, res, next) => {
       });
     }
 
+    // 💡 CORRECCIÓN: Se añadieron t.id_encargado y t.id_tutor al SELECT
     const sql = `
     SELECT
-      t.id, t.nombre, t.id_sede, t.fecha, t.estado,
+      t.id, t.nombre, t.id_sede, t.id_encargado, t.id_tutor, t.fecha, t.estado,
       MAX(JSON_OBJECT(
         'ci', p_enc.ci, 'nombre', p_enc.nombre, 'apellido', p_enc.apellido, 
         'ci_type', p_enc.ci_type, 'email', p_enc.email, 'telefono', p_enc.telefono,
@@ -541,6 +544,10 @@ export const updateTesis = async (req, res, next) => {
     id_jurados,
   } = req.body;
 
+  // Definido en el ámbito superior
+  const idEstudiantesArray = ensureArray(id_estudiantes);
+  const idJuradosArray = ensureArray(id_jurados);
+
   const idSedeNum = parseInt(id_sede, 10);
   if (isNaN(idSedeNum)) {
     return next(new Error("El campo id_sede debe ser un número."));
@@ -556,9 +563,9 @@ export const updateTesis = async (req, res, next) => {
       console.log("DEBUG: Subiendo nuevo archivo PDF a Terabox...");
       const archivo_pdf = Buffer.from(req.file.buffer);
 
-      const idEstudiantesArray = ensureArray(id_estudiantes);
       const autoresDetails = [];
 
+      // Usar idEstudiantesArray aquí
       for (const autorId of idEstudiantesArray) {
         const autorIdNum = parseInt(autorId, 10);
         if (isNaN(autorIdNum)) continue;
@@ -626,6 +633,7 @@ export const updateTesis = async (req, res, next) => {
       sql: "DELETE FROM Alumno_tesis WHERE id_tesis = ?",
       args: [id],
     });
+    // Usamos la variable definida al principio
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
       if (isNaN(autorId)) continue;
@@ -640,7 +648,7 @@ export const updateTesis = async (req, res, next) => {
       sql: "DELETE FROM Jurado WHERE id_tesis = ?",
       args: [id],
     });
-    const idJuradosArray = ensureArray(id_jurados);
+    
     for (const juradoIdStr of idJuradosArray) {
       const juradoId = parseInt(juradoIdStr, 10);
       if (isNaN(juradoId)) continue;
@@ -1347,4 +1355,3 @@ export const updateTesisStatus = async (req, res, next) => {
     next(error);
   }
 };
-
