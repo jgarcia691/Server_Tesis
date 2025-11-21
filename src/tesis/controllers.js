@@ -68,6 +68,7 @@ export const getTesis = async (req, res, next) => {
       id_tutor,
       id_encargado,
       id_estudiante,
+      id_jurado,
       nombre,
       fecha_desde,
       fecha_hasta,
@@ -126,11 +127,22 @@ export const getTesis = async (req, res, next) => {
       }
     }
 
+    // Filtro por jurado (profesor asignado como jurado)
+    // Usamos EXISTS para manejar correctamente múltiples jurados por tesis
+    if (id_jurado) {
+      const idJuradoNum = parseInt(id_jurado, 10);
+      if (!isNaN(idJuradoNum)) {
+        whereConditions.push("EXISTS (SELECT 1 FROM Jurado tj_filter WHERE tj_filter.id_tesis = t.id AND tj_filter.id_profesor = ?)");
+        queryArgs.push(idJuradoNum);
+      }
+    }
+
     // Filtro por estudiante/autor (requiere JOIN con Alumno_tesis)
+    // Usamos EXISTS para manejar correctamente múltiples autores por tesis
     if (id_estudiante) {
       const idEstudianteNum = parseInt(id_estudiante, 10);
       if (!isNaN(idEstudianteNum)) {
-        whereConditions.push("at.id_estudiante = ?");
+        whereConditions.push("EXISTS (SELECT 1 FROM Alumno_tesis at_filter WHERE at_filter.id_tesis = t.id AND at_filter.id_estudiante = ?)");
         queryArgs.push(idEstudianteNum);
       }
     }
