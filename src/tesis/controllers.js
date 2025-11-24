@@ -441,7 +441,9 @@ export const uploadTesis = async (req, res, next) => {
     return next(new Error("El archivo PDF es obligatorio."));
   }
 
-  const trx = await db.transaction();
+  // NOTA: No iniciar la transacción antes de la subida a Terabox.
+  // Hacemos todas las operaciones largas (subida) primero y sólo después abrimos la transacción.
+  let trx = null;
 
   try {
     const archivo_pdf = Buffer.from(req.file.buffer);
@@ -452,11 +454,12 @@ export const uploadTesis = async (req, res, next) => {
     const idEstudiantesArray = ensureArray(id_estudiantes);
     const autoresDetails = [];
 
+    // Consultas a Persona fuera de la transacción (evita timeout mientras sube el archivo)
     for (const autorId of idEstudiantesArray) {
       const autorIdNum = parseInt(autorId, 10);
       if (isNaN(autorIdNum)) continue;
 
-      const result = await trx.execute({
+      const result = await db.execute({
         sql: "SELECT ci_type, ci FROM Persona WHERE ci = ?",
         args: [autorIdNum],
       });
@@ -491,6 +494,9 @@ export const uploadTesis = async (req, res, next) => {
     } catch (e) {
       throw new Error(`Error subiendo a Terabox: ${e.message}`);
     }
+
+    // Crear la transacción sólo después de la subida a Terabox
+    trx = await db.transaction();
 
     const sqlTesis = `
       INSERT INTO Tesis (id_encargado, id_sede, id_tutor, nombre, fecha, estado, archivo_url, terabox_fs_id)
@@ -540,7 +546,11 @@ export const uploadTesis = async (req, res, next) => {
       terabox_fs_id: teraboxFsId,
     });
   } catch (error) {
-    await trx.rollback();
+    try {
+      if (trx) await trx.rollback();
+    } catch (rbErr) {
+      console.error("Error al hacer rollback:", rbErr);
+    }
     next(error);
   }
 };
@@ -571,7 +581,8 @@ export const updateTesis = async (req, res, next) => {
     return next(new Error("El campo id_sede debe ser un número."));
   }
 
-  const trx = await db.transaction();
+  // No abrir la transacción todavía para evitar timeouts si hay subida de archivo
+  let trx = null;
 
   try {
     let archivoUrl = null;
@@ -580,15 +591,14 @@ export const updateTesis = async (req, res, next) => {
     if (req.file && req.file.buffer) {
       console.log("DEBUG: Subiendo nuevo archivo PDF a Terabox...");
       const archivo_pdf = Buffer.from(req.file.buffer);
-
       const autoresDetails = [];
 
-      // Usar idEstudiantesArray aquí
+      // Obtener detalles de autores SIN usar la transacción (evitar timeouts durante la subida)
       for (const autorId of idEstudiantesArray) {
         const autorIdNum = parseInt(autorId, 10);
         if (isNaN(autorIdNum)) continue;
 
-        const result = await trx.execute({
+        const result = await db.execute({
           sql: "SELECT ci_type, ci FROM Persona WHERE ci = ?",
           args: [autorIdNum],
         });
@@ -622,6 +632,9 @@ export const updateTesis = async (req, res, next) => {
       }
     }
 
+    // Crear la transacción justo antes del UPDATE (o la crear si aún no existe)
+    if (!trx) trx = await db.transaction();
+
     let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?, id_encargado = ?, id_sede = ?, id_tutor = ?`;
     let params = [
       nombre,
@@ -642,7 +655,7 @@ export const updateTesis = async (req, res, next) => {
 
     const result = await trx.execute({ sql: query, args: params });
     if (result.affectedRows === 0) {
-      await trx.rollback();
+      if (trx) await trx.rollback();
       return res.status(404).json({ message: "Tesis no encontrada." });
     }
 
@@ -682,7 +695,11 @@ export const updateTesis = async (req, res, next) => {
       .status(200)
       .json({ message: "Tesis actualizada correctamente." });
   } catch (err) {
-    await trx.rollback();
+    try {
+      if (trx) await trx.rollback();
+    } catch (rbErr) {
+      console.error('Error al hacer rollback:', rbErr);
+    }
     next(err);
   }
 };
