@@ -764,7 +764,47 @@ export const downloadTesis = async (req, res, next) => {
       
       res.send(buffer);
     } else if (row.archivo_url) {
-      return res.redirect(row.archivo_url);
+      // Proxy: descargar el archivo desde `archivo_url` y reenviarlo al cliente
+      try {
+        console.log("Usando archivo_url como respaldo: descargando y reenviando al cliente...");
+        const responseRemote = await axios({
+          method: "GET",
+          url: row.archivo_url,
+          responseType: "arraybuffer",
+          httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            Referer: "https://www.terabox.com/",
+          },
+          timeout: 60000,
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+
+        let fileData = responseRemote.data;
+        if (!Buffer.isBuffer(fileData)) fileData = Buffer.from(fileData);
+
+        if (!fileData || fileData.length === 0) {
+          throw new Error("El archivo remoto está vacío");
+        }
+
+        // Asegurar CORS header por si acaso (el middleware `cors` ya debería hacerlo)
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        const contentType = responseRemote.headers["content-type"] || "application/pdf";
+        const contentLength = fileData.length;
+
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
+        res.setHeader("Content-Length", contentLength);
+        res.setHeader("Content-Transfer-Encoding", "binary");
+
+        return res.send(fileData);
+      } catch (errRemote) {
+        console.error("Error proxying archivo_url:", errRemote.message || errRemote);
+        return res.status(502).json({ message: "No se pudo descargar el archivo remoto." });
+      }
     } else {
       return res.status(404).json({ message: "Archivo no disponible" });
     }
