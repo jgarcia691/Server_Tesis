@@ -704,11 +704,11 @@ export const updateTesis = async (req, res, next) => {
   }
 };
 
-// --- DESCARGAR TESIS (Versión Vercel Debug) ---
+// --- DESCARGAR TESIS (Versión Final: Fix Caracteres Especiales) ---
 export const downloadTesis = async (req, res, next) => {
   const { id } = req.params;
 
-  // Headers manuales (Respaldo por si falla vercel.json)
+  // Headers manuales para CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   
@@ -726,26 +726,25 @@ export const downloadTesis = async (req, res, next) => {
       return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    // Sanitizar nombre
+    // --- CORRECCIÓN CRÍTICA AQUI ---
+    // 1. normalize('NFD'): Separa la letra de la tilde (ej: ó se convierte en o + ´)
+    // 2. replace(/[\u0300-\u036f]/g, ""): Elimina las marcas de tilde sueltas
+    // 3. replace(...): Elimina cualquier otro caracter raro
     const safeFileName = (row.nombre || "tesis")
-      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_')
-      .replace(/\s+/g, '_')
-      .substring(0, 100);
+      .normalize("NFD") 
+      .replace(/[\u0300-\u036f]/g, "") // Quita tildes (á -> a, ñ -> n)
+      .replace(/[^a-zA-Z0-9._-]/g, "_") // Solo permite letras, números, puntos, guiones y pisos
+      .replace(/_+/g, "_") // Evita guiones bajos dobles
+      .substring(0, 100); // Limita el largo
+
+    console.log(`[INFO] Nombre de archivo sanitizado: ${safeFileName}.pdf`);
 
     let downloadLink = null;
 
     // A. Intentar obtener enlace
     if (row.terabox_fs_id) {
-      console.log(`[INFO] Buscando enlace TeraBox para fs_id: ${row.terabox_fs_id}`);
       try {
-        // Ponemos un timeout manual a la función de obtención de link
-        // para que no cuelgue la función serverless
-        const linkPromise = getDownloadLinkFromFsId(row.terabox_fs_id);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout obteniendo link de TeraBox")), 8000)
-        );
-
-        const linkData = await Promise.race([linkPromise, timeoutPromise]);
+        const linkData = await getDownloadLinkFromFsId(row.terabox_fs_id);
         downloadLink = linkData?.downloadLink || linkData?.dlink || linkData?.url;
       } catch (tbError) {
         console.error(`[ERROR] Fallo TeraBox: ${tbError.message}`);
@@ -754,16 +753,12 @@ export const downloadTesis = async (req, res, next) => {
 
     // B. Respaldo
     if (!downloadLink && row.archivo_url) {
-      console.log("[INFO] Usando archivo_url de respaldo");
       downloadLink = row.archivo_url;
     }
 
     if (!downloadLink) {
-      console.error("[ERROR] No hay enlace de descarga disponible");
       return res.status(404).json({ message: "No se pudo generar el enlace." });
     }
-
-    console.log(`[STREAM] Iniciando stream desde: ${downloadLink.substring(0, 50)}...`);
 
     const response = await axios({
       method: "GET",
@@ -774,13 +769,13 @@ export const downloadTesis = async (req, res, next) => {
         Referer: "https://www.terabox.com/",
         Cookie: `ndus=${process.env.TERABOX_NDUS}`,
       },
-      timeout: 20000, // Timeout de Axios
+      timeout: 20000,
     });
 
     res.setHeader("Content-Type", "application/pdf");
+    // Usamos el nombre sanitizado (safeFileName) que garantiza ser ASCII
     res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
     
-    // Pipe crítico
     response.data.pipe(res);
 
     response.data.on('error', (err) => {
@@ -789,8 +784,7 @@ export const downloadTesis = async (req, res, next) => {
     });
 
   } catch (err) {
-    console.error(`[CRITICAL 500] Error en downloadTesis:`, err);
-    console.error(err.stack); // Ver el stack trace en logs de Vercel
+    console.error(`[CRITICAL ERROR]`, err);
     if (!res.headersSent) {
       res.status(500).json({ message: `Error interno: ${err.message}` });
     }
