@@ -704,366 +704,98 @@ export const updateTesis = async (req, res, next) => {
   }
 };
 
-// --- DESCARGAR TESIS (Corregido: Streaming + CORS Headers) ---
+// --- DESCARGAR TESIS (Versión Vercel Debug) ---
 export const downloadTesis = async (req, res, next) => {
   const { id } = req.params;
-  
-  // 1. IMPORTANTE: Forzar encabezados CORS inmediatamente.
-  // Esto permite que el Frontend lea el error (404, 500) en lugar de recibir un error de red genérico.
+
+  // Headers manuales (Respaldo por si falla vercel.json)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  console.log(`DEBUG: Solicitud de descarga para ID: ${id}`);
+  
+  console.log(`[START] Descarga iniciada para ID: ${id}`);
 
   try {
-    // Buscar la tesis en la BD
     const result = await db.execute({
       sql: "SELECT nombre, archivo_url, terabox_fs_id FROM Tesis WHERE id = ?",
       args: [id],
     });
     
     const row = result?.rows?.[0];
-    
-    // Validación: Si no existe el registro
     if (!row) {
-      console.error(`ERROR: Tesis ID ${id} no encontrada en base de datos.`);
-      return res.status(404).json({ message: "Tesis no encontrada." });
+      console.error(`[404] Tesis ID ${id} no encontrada en BD`);
+      return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    // Sanitizar nombre para el archivo
-    const safeFileName = row.nombre
-      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_') // Reemplazar caracteres raros
-      .replace(/\s+/g, '_') // Espacios a guiones bajos
-      .substring(0, 200);   // Limitar longitud
+    // Sanitizar nombre
+    const safeFileName = (row.nombre || "tesis")
+      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_')
+      .replace(/\s+/g, '_')
+      .substring(0, 100);
 
     let downloadLink = null;
 
-    // A. Intentar obtener enlace fresco desde TeraBox FS_ID
+    // A. Intentar obtener enlace
     if (row.terabox_fs_id) {
-      console.log("DEBUG: Buscando enlace vía fs_id...");
+      console.log(`[INFO] Buscando enlace TeraBox para fs_id: ${row.terabox_fs_id}`);
       try {
-        const linkData = await getDownloadLinkFromFsId(row.terabox_fs_id);
+        // Ponemos un timeout manual a la función de obtención de link
+        // para que no cuelgue la función serverless
+        const linkPromise = getDownloadLinkFromFsId(row.terabox_fs_id);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout obteniendo link de TeraBox")), 8000)
+        );
+
+        const linkData = await Promise.race([linkPromise, timeoutPromise]);
         downloadLink = linkData?.downloadLink || linkData?.dlink || linkData?.url;
       } catch (tbError) {
-        console.warn("WARN: Falló la obtención por fs_id, intentando respaldo...", tbError.message);
+        console.error(`[ERROR] Fallo TeraBox: ${tbError.message}`);
       }
     }
 
-    // B. Si falla lo anterior, usar archivo_url de respaldo
+    // B. Respaldo
     if (!downloadLink && row.archivo_url) {
-      console.log("DEBUG: Usando archivo_url de respaldo.");
+      console.log("[INFO] Usando archivo_url de respaldo");
       downloadLink = row.archivo_url;
     }
 
-    // Validación: Si no hay enlace posible
     if (!downloadLink) {
-      return res.status(404).json({ message: "No se pudo generar un enlace de descarga válido." });
+      console.error("[ERROR] No hay enlace de descarga disponible");
+      return res.status(404).json({ message: "No se pudo generar el enlace." });
     }
 
-    console.log(`DEBUG: Iniciando STREAM desde: ${downloadLink}`);
+    console.log(`[STREAM] Iniciando stream desde: ${downloadLink.substring(0, 50)}...`);
 
-    // 2. PROCESO DE STREAMING (Evita saturar la memoria RAM en Vercel)
     const response = await axios({
       method: "GET",
       url: downloadLink,
-      responseType: "stream", // <--- CLAVE: Stream en lugar de arraybuffer
-      httpsAgent: new https.Agent({ rejectUnauthorized: false }), // Ignorar errores SSL si es necesario
+      responseType: "stream",
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         Referer: "https://www.terabox.com/",
         Cookie: `ndus=${process.env.TERABOX_NDUS}`,
       },
-      timeout: 45000, // Timeout extendido para iniciar la conexión
+      timeout: 20000, // Timeout de Axios
     });
 
-    // Configurar encabezados para la descarga del archivo al cliente
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
     
-    // Si el servidor origen nos da el tamaño, lo pasamos al cliente
-    if (response.headers['content-length']) {
-      res.setHeader("Content-Length", response.headers['content-length']);
-    }
-
-    // 3. PIPE: Conectar la descarga remota directamente a la respuesta del cliente
+    // Pipe crítico
     response.data.pipe(res);
 
-    // Manejo de errores durante la transmisión (cuando el stream ya empezó)
-    response.data.on('error', (streamErr) => {
-      console.error("ERROR CRÍTICO durante el stream:", streamErr);
-      // Si los headers no se han enviado, podemos mandar un JSON
-      if (!res.headersSent) {
-        return res.status(502).json({ message: "Error interrumpió la descarga." });
-      } else {
-        // Si ya empezó la descarga, solo cerramos la conexión (el usuario verá 'Error de red')
-        res.end();
-      }
+    response.data.on('error', (err) => {
+      console.error("[STREAM ERROR]", err);
+      if(!res.headersSent) res.status(502).end();
     });
 
   } catch (err) {
-    console.error("ERROR en downloadTesis:", err);
-    // Asegurar que devolvemos JSON si ocurre un error antes del stream
+    console.error(`[CRITICAL 500] Error en downloadTesis:`, err);
+    console.error(err.stack); // Ver el stack trace en logs de Vercel
     if (!res.headersSent) {
-      // Verifica si es un error de Axios (ej. 403 o 404 del servidor remoto)
-      if (err.response) {
-        return res.status(err.response.status).json({ 
-          message: `Error del servidor remoto: ${err.response.statusText}` 
-        });
-      }
-      return res.status(500).json({ message: `Error interno: ${err.message}` });
+      res.status(500).json({ message: `Error interno: ${err.message}` });
     }
-    next(err);
   }
 };
-
-// --- Función para procesar la descarga en background ---
-async function processDownloadAllTesis(jobId) {
-  const progress = downloadProgress.get(jobId);
-  if (!progress) return;
-
-  try {
-    progress.status = "processing";
-    progress.current = 0;
-
-    // 1. Obtener todas las tesis de la base de datos que tengan terabox_fs_id
-    const result = await db.execute({
-      sql: "SELECT id, nombre, terabox_fs_id, archivo_url FROM Tesis WHERE terabox_fs_id IS NOT NULL AND terabox_fs_id != ''",
-    });
-
-    const tesis = result.rows || [];
-    progress.total = tesis.length;
-
-    if (tesis.length === 0) {
-      progress.status = "error";
-      progress.error = "No se encontraron tesis con archivos en Terabox para descargar.";
-      return;
-    }
-
-    // 2. Crear el archivo ZIP
-    const zip = new JSZip();
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-
-    // 3. Descargar cada tesis
-    for (let i = 0; i < tesis.length; i++) {
-      const tesisItem = tesis[i];
-      const { id, nombre, terabox_fs_id, archivo_url } = tesisItem;
-
-      progress.current = i + 1;
-      progress.progress = Math.round((progress.current / progress.total) * 100);
-      progress.currentTesis = nombre;
-      
-      // Log periódico cada 10 tesis o en la última
-      if (i % 10 === 0 || i === tesis.length - 1) {
-        console.log(`[${jobId}] 📊 Progreso: ${progress.progress}% (${progress.current}/${progress.total}) - ${nombre}`);
-      }
-
-      try {
-        console.log(
-          `[${jobId}] Procesando tesis ${id}: ${nombre} (${progress.current}/${progress.total})`
-        );
-
-        // Obtener el enlace de descarga desde Terabox
-        const linkData = await getDownloadLinkFromFsId(terabox_fs_id);
-        const downloadLink =
-          linkData?.downloadLink || linkData?.dlink || linkData?.url;
-
-        if (!downloadLink) {
-          console.warn(
-            `[${jobId}] No se pudo obtener el enlace de descarga para la tesis ${id} (${nombre})`
-          );
-          // Intentar usar archivo_url como respaldo
-          if (archivo_url) {
-            console.log(`[${jobId}] Usando URL de respaldo para la tesis ${id}`);
-            try {
-              const response = await axios({
-                method: "GET",
-                url: archivo_url,
-                responseType: "arraybuffer",
-                httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-                headers: {
-                  "User-Agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                  Referer: "https://www.terabox.com/",
-                  Cookie: `ndus=${process.env.TERABOX_NDUS}`,
-                },
-                timeout: 60000,
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity,
-              });
-
-              let fileData = response.data;
-              if (!Buffer.isBuffer(fileData)) {
-                fileData = Buffer.from(fileData);
-              }
-
-              if (!fileData || fileData.length === 0) {
-                throw new Error("El archivo descargado está vacío");
-              }
-
-              const safeFileName = `${id}_${nombre.replace(
-                /[^a-zA-Z0-9._-]/g,
-                "_"
-              )}.pdf`;
-              zip.file(safeFileName, fileData);
-              successCount++;
-              progress.successCount = successCount;
-              continue;
-            } catch (backupError) {
-              console.error(
-                `[${jobId}] Error al descargar desde URL de respaldo para tesis ${id}:`,
-                backupError.message
-              );
-              errorCount++;
-              progress.errorCount = errorCount;
-              errors.push({ id, nombre, error: backupError.message });
-              zip.file(
-                `error_log_${id}_${nombre.replace(
-                  /[^a-zA-Z0-9._-]/g,
-                  "_"
-                )}.txt`,
-                `No se pudo descargar esta tesis. Causa: No se pudo obtener enlace de Terabox ni usar URL de respaldo.`
-              );
-              continue;
-            }
-          } else {
-            errorCount++;
-            progress.errorCount = errorCount;
-            errors.push({ id, nombre, error: "No se pudo obtener enlace de descarga" });
-            zip.file(
-              `error_log_${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, "_")}.txt`,
-              `No se pudo descargar esta tesis. Causa: No se pudo obtener enlace de descarga.`
-            );
-            continue;
-          }
-        }
-
-        // Descargar el archivo desde Terabox
-        const response = await axios({
-          method: "GET",
-          url: downloadLink,
-          responseType: "arraybuffer",
-          httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            Referer: "https://www.terabox.com/",
-            Cookie: `ndus=${process.env.TERABOX_NDUS}`,
-          },
-          timeout: 60000,
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-
-        let fileData = response.data;
-        if (!Buffer.isBuffer(fileData)) {
-          fileData = Buffer.from(fileData);
-        }
-
-        if (!fileData || fileData.length === 0) {
-          throw new Error("El archivo descargado está vacío");
-        }
-
-        const safeFileName = `${id}_${nombre.replace(
-          /[^a-zA-Z0-9._-]/g,
-          "_"
-        )}.pdf`;
-        zip.file(safeFileName, fileData);
-        successCount++;
-        progress.successCount = successCount;
-      } catch (error) {
-        errorCount++;
-        progress.errorCount = errorCount;
-        errors.push({ id, nombre, error: error.message });
-        console.error(
-          `[${jobId}] Error procesando la tesis ${id} (${nombre}):`,
-          error.message
-        );
-        zip.file(
-          `error_log_${id}_${nombre.replace(/[^a-zA-Z0-9._-]/g, "_")}.txt`,
-          `No se pudo descargar esta tesis. Causa: ${error.message}`
-        );
-      }
-    }
-
-    progress.currentTesis = null;
-    progress.status = "generating";
-    progress.errors = errors;
-
-    // 4. Verificar si hay archivos en el ZIP
-    const fileCount = Object.keys(zip.files).length;
-    if (fileCount === 0) {
-      progress.status = "error";
-      progress.error = "No se pudieron descargar archivos. Verifique los logs de error.";
-      return;
-    }
-
-    console.log(
-      `[${jobId}] Proceso completado: ${successCount} exitosas, ${errorCount} con errores. Total archivos en ZIP: ${fileCount}`
-    );
-
-    // 5. Generar el ZIP completo en memoria
-    console.log(`[${jobId}] Generando archivo ZIP...`);
-    const zipBuffer = await zip.generateAsync({
-      type: "nodebuffer",
-      compression: "DEFLATE",
-      compressionOptions: { level: 6 },
-      streamFiles: false,
-    });
-
-    if (!zipBuffer || zipBuffer.length === 0) {
-      progress.status = "error";
-      progress.error = "Error al generar el archivo ZIP. El archivo está vacío.";
-      return;
-    }
-
-    const finalBuffer = Buffer.isBuffer(zipBuffer)
-      ? zipBuffer
-      : Buffer.from(zipBuffer);
-
-    if (finalBuffer[0] !== 0x50 || finalBuffer[1] !== 0x4b) {
-      progress.status = "error";
-      progress.error = "Error al generar el archivo ZIP. El archivo generado no es válido.";
-      return;
-    }
-
-    // Actualizar progreso a completado
-    progress.status = "completed";
-    progress.zipBuffer = finalBuffer;
-    progress.progress = 100;
-    progress.current = progress.total;
-    progress.currentTesis = null;
-    
-    console.log(`[${jobId}] ✅ Status actualizado a COMPLETED`);
-    console.log(`[${jobId}] ZIP generado correctamente: ${finalBuffer.length} bytes`);
-    console.log(`[${jobId}] Progreso final: ${progress.progress}% (${progress.current}/${progress.total})`);
-    console.log(`[${jobId}] Éxitos: ${progress.successCount}, Errores: ${progress.errorCount}`);
-    
-    // Pequeño delay para asegurar que el estado se propague
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Verificar que el progreso se guardó correctamente
-    const verifyProgress = downloadProgress.get(jobId);
-    if (verifyProgress && verifyProgress.status === "completed") {
-      console.log(`[${jobId}] ✅ Verificación: Status guardado correctamente como "completed"`);
-      console.log(`[${jobId}] ✅ ZIP buffer disponible: ${verifyProgress.zipBuffer ? 'Sí' : 'No'}`);
-    } else {
-      console.error(`[${jobId}] ❌ ERROR: Status NO se guardó correctamente!`);
-      console.error(`[${jobId}] Status actual en verificación: ${verifyProgress?.status || 'undefined'}`);
-    }
-  } catch (err) {
-    console.error(`[${jobId}] ❌ Error en processDownloadAllTesis:`, err);
-    console.error(`[${jobId}] Stack trace:`, err.stack);
-    const progress = downloadProgress.get(jobId);
-    if (progress) {
-      progress.status = "error";
-      progress.error = err.message;
-      console.log(`[${jobId}] Status actualizado a ERROR: ${err.message}`);
-    }
-  }
-}
 
 // --- DESCARGAR TODAS LAS TESIS (Inicia proceso en background) ---
 export const downloadAllTesis = async (req, res, next) => {
