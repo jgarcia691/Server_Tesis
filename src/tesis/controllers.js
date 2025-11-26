@@ -704,111 +704,115 @@ export const updateTesis = async (req, res, next) => {
   }
 };
 
-// --- DESCARGAR TESIS ---
+// --- DESCARGAR TESIS (Corregido: Streaming + CORS Headers) ---
 export const downloadTesis = async (req, res, next) => {
   const { id } = req.params;
-  console.log("ID recibido:", id);
+  
+  // 1. IMPORTANTE: Forzar encabezados CORS inmediatamente.
+  // Esto permite que el Frontend lea el error (404, 500) en lugar de recibir un error de red genérico.
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  console.log(`DEBUG: Solicitud de descarga para ID: ${id}`);
 
   try {
+    // Buscar la tesis en la BD
     const result = await db.execute({
       sql: "SELECT nombre, archivo_url, terabox_fs_id FROM Tesis WHERE id = ?",
       args: [id],
     });
+    
     const row = result?.rows?.[0];
-    if (!row) return res.status(404).json({ message: "Tesis no encontrada" });
-
-    // Sanitizar el nombre de la tesis para usarlo como nombre de archivo
-    const safeFileName = row.nombre
-      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_')
-      .replace(/\s+/g, '_')
-      .substring(0, 200); // Limitar longitud
-
-    if (row.terabox_fs_id) {
-      console.log("Obteniendo enlace de descarga...");
-      const link = await getDownloadLinkFromFsId(row.terabox_fs_id);
-      const fileLink = link?.downloadLink;
-
-      if (!fileLink) {
-        if (row.archivo_url) {
-          console.log(
-            "No se pudo obtener el enlace de Terabox, usando URL de respaldo."
-          );
-          return res.redirect(row.archivo_url);
-        }
-        throw new Error(
-          "No se pudo obtener el enlace de descarga y no hay URL de respaldo."
-        );
-      }
-
-      console.log(`Intentando descargar desde: ${fileLink}`);
-
-      const response = await axios({
-        method: "GET",
-        url: fileLink,
-        responseType: "arraybuffer",
-        httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-          Referer: "https://www.terabox.com/",
-          Cookie: `ndus=${process.env.TERABOX_NDUS}`,
-        },
-      });
-
-      const buffer = Buffer.from(response.data);
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
-      res.setHeader("Content-Length", buffer.length);
-      res.setHeader("Content-Transfer-Encoding", "binary");
-      
-      res.send(buffer);
-    } else if (row.archivo_url) {
-      // Proxy: descargar el archivo desde `archivo_url` y reenviarlo al cliente
-      try {
-        console.log("Usando archivo_url como respaldo: descargando y reenviando al cliente...");
-        const responseRemote = await axios({
-          method: "GET",
-          url: row.archivo_url,
-          responseType: "arraybuffer",
-          httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            Referer: "https://www.terabox.com/",
-          },
-          timeout: 60000,
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-
-        let fileData = responseRemote.data;
-        if (!Buffer.isBuffer(fileData)) fileData = Buffer.from(fileData);
-
-        if (!fileData || fileData.length === 0) {
-          throw new Error("El archivo remoto está vacío");
-        }
-
-        // Asegurar CORS header por si acaso (el middleware `cors` ya debería hacerlo)
-        res.setHeader("Access-Control-Allow-Origin", "*");
-
-        const contentType = responseRemote.headers["content-type"] || "application/pdf";
-        const contentLength = fileData.length;
-
-        res.setHeader("Content-Type", contentType);
-        res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
-        res.setHeader("Content-Length", contentLength);
-        res.setHeader("Content-Transfer-Encoding", "binary");
-
-        return res.send(fileData);
-      } catch (errRemote) {
-        console.error("Error proxying archivo_url:", errRemote.message || errRemote);
-        return res.status(502).json({ message: "No se pudo descargar el archivo remoto." });
-      }
-    } else {
-      return res.status(404).json({ message: "Archivo no disponible" });
+    
+    // Validación: Si no existe el registro
+    if (!row) {
+      console.error(`ERROR: Tesis ID ${id} no encontrada en base de datos.`);
+      return res.status(404).json({ message: "Tesis no encontrada." });
     }
+
+    // Sanitizar nombre para el archivo
+    const safeFileName = row.nombre
+      .replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s._-]/g, '_') // Reemplazar caracteres raros
+      .replace(/\s+/g, '_') // Espacios a guiones bajos
+      .substring(0, 200);   // Limitar longitud
+
+    let downloadLink = null;
+
+    // A. Intentar obtener enlace fresco desde TeraBox FS_ID
+    if (row.terabox_fs_id) {
+      console.log("DEBUG: Buscando enlace vía fs_id...");
+      try {
+        const linkData = await getDownloadLinkFromFsId(row.terabox_fs_id);
+        downloadLink = linkData?.downloadLink || linkData?.dlink || linkData?.url;
+      } catch (tbError) {
+        console.warn("WARN: Falló la obtención por fs_id, intentando respaldo...", tbError.message);
+      }
+    }
+
+    // B. Si falla lo anterior, usar archivo_url de respaldo
+    if (!downloadLink && row.archivo_url) {
+      console.log("DEBUG: Usando archivo_url de respaldo.");
+      downloadLink = row.archivo_url;
+    }
+
+    // Validación: Si no hay enlace posible
+    if (!downloadLink) {
+      return res.status(404).json({ message: "No se pudo generar un enlace de descarga válido." });
+    }
+
+    console.log(`DEBUG: Iniciando STREAM desde: ${downloadLink}`);
+
+    // 2. PROCESO DE STREAMING (Evita saturar la memoria RAM en Vercel)
+    const response = await axios({
+      method: "GET",
+      url: downloadLink,
+      responseType: "stream", // <--- CLAVE: Stream en lugar de arraybuffer
+      httpsAgent: new https.Agent({ rejectUnauthorized: false }), // Ignorar errores SSL si es necesario
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        Referer: "https://www.terabox.com/",
+        Cookie: `ndus=${process.env.TERABOX_NDUS}`,
+      },
+      timeout: 45000, // Timeout extendido para iniciar la conexión
+    });
+
+    // Configurar encabezados para la descarga del archivo al cliente
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
+    
+    // Si el servidor origen nos da el tamaño, lo pasamos al cliente
+    if (response.headers['content-length']) {
+      res.setHeader("Content-Length", response.headers['content-length']);
+    }
+
+    // 3. PIPE: Conectar la descarga remota directamente a la respuesta del cliente
+    response.data.pipe(res);
+
+    // Manejo de errores durante la transmisión (cuando el stream ya empezó)
+    response.data.on('error', (streamErr) => {
+      console.error("ERROR CRÍTICO durante el stream:", streamErr);
+      // Si los headers no se han enviado, podemos mandar un JSON
+      if (!res.headersSent) {
+        return res.status(502).json({ message: "Error interrumpió la descarga." });
+      } else {
+        // Si ya empezó la descarga, solo cerramos la conexión (el usuario verá 'Error de red')
+        res.end();
+      }
+    });
+
   } catch (err) {
+    console.error("ERROR en downloadTesis:", err);
+    // Asegurar que devolvemos JSON si ocurre un error antes del stream
+    if (!res.headersSent) {
+      // Verifica si es un error de Axios (ej. 403 o 404 del servidor remoto)
+      if (err.response) {
+        return res.status(err.response.status).json({ 
+          message: `Error del servidor remoto: ${err.response.statusText}` 
+        });
+      }
+      return res.status(500).json({ message: `Error interno: ${err.message}` });
+    }
     next(err);
   }
 };
