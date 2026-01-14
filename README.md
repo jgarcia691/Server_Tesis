@@ -36,19 +36,22 @@ Backend RESTful API para la gestión de tesis universitarias, desarrollado con N
 ## ⚙️ Instalación
 
 1. **Clonar el repositorio**
+
    ```bash
    git clone https://github.com/jgarcia691/Server_Tesis
    cd Server_Tesis
    ```
 
 2. **Instalar dependencias**
+
    ```bash
    npm install
    ```
 
 3. **Configurar variables de entorno**
-   
+
    Crea un archivo `.env` en la raíz del proyecto con las siguientes variables:
+
    ```env
    # Turso Database
    TURSO_DATABASE_URL=libsql://your-database.turso.io
@@ -67,6 +70,7 @@ Backend RESTful API para la gestión de tesis universitarias, desarrollado con N
    ```
 
 4. **Iniciar el servidor**
+
    ```bash
    npm start
    ```
@@ -77,26 +81,26 @@ Backend RESTful API para la gestión de tesis universitarias, desarrollado con N
 
 ### Tesis
 
-| Método | Endpoint | Descripción | Query Params |
-|--------|----------|-------------|--------------|
-| `GET` | `/tesis` | Obtener todas las tesis (paginado) | `page`, `limit`, `sortBy`, `order`, `cadena`, `estado`, `id_sede`, `id_tutor`, `id_encargado`, `id_estudiante`, `id_jurado`, `nombre`, `fecha_desde`, `fecha_hasta` |
-| `GET` | `/tesis/:id` | Obtener una tesis por ID | - |
-| `GET` | `/tesis/cadena/:nombre` | Buscar tesis por nombre | `page`, `limit` |
-| `GET` | `/tesis/:id/download` | Descargar PDF de una tesis | - |
-| `GET` | `/tesis/:id/autores` | Obtener autores de una tesis | - |
-| `POST` | `/tesis` | Crear nueva tesis | - |
-| `PUT` | `/tesis/:id` | Actualizar tesis | - |
-| `PUT` | `/tesis/:id/status` | Actualizar estado de tesis | - |
-| `DELETE` | `/tesis/:id` | Eliminar tesis | - |
+| Método   | Endpoint                | Descripción                        | Query Params                                                                                                                                                        |
+| -------- | ----------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/tesis`                | Obtener todas las tesis (paginado) | `page`, `limit`, `sortBy`, `order`, `cadena`, `estado`, `id_sede`, `id_tutor`, `id_encargado`, `id_estudiante`, `id_jurado`, `nombre`, `fecha_desde`, `fecha_hasta` |
+| `GET`    | `/tesis/:id`            | Obtener una tesis por ID           | -                                                                                                                                                                   |
+| `GET`    | `/tesis/cadena/:nombre` | Buscar tesis por nombre            | `page`, `limit`                                                                                                                                                     |
+| `GET`    | `/tesis/:id/download`   | Descargar PDF de una tesis         | -                                                                                                                                                                   |
+| `GET`    | `/tesis/:id/autores`    | Obtener autores de una tesis       | -                                                                                                                                                                   |
+| `POST`   | `/tesis`                | Crear nueva tesis                  | -                                                                                                                                                                   |
+| `PUT`    | `/tesis/:id`            | Actualizar tesis                   | -                                                                                                                                                                   |
+| `PUT`    | `/tesis/:id/status`     | Actualizar estado de tesis         | -                                                                                                                                                                   |
+| `DELETE` | `/tesis/:id`            | Eliminar tesis                     | -                                                                                                                                                                   |
 
 ### Descarga Masiva
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `GET` | `/tesis/download/all` | Iniciar descarga de todas las tesis |
-| `GET` | `/tesis/download/progress/:jobId` | Obtener progreso de descarga (polling) |
-| `GET` | `/tesis/download/progress/:jobId/stream` | Stream de progreso (SSE) |
-| `GET` | `/tesis/download/result/:jobId` | Descargar archivo ZIP resultante |
+| Método | Endpoint                                 | Descripción                            |
+| ------ | ---------------------------------------- | -------------------------------------- |
+| `GET`  | `/tesis/download/all`                    | Iniciar descarga de todas las tesis    |
+| `GET`  | `/tesis/download/progress/:jobId`        | Obtener progreso de descarga (polling) |
+| `GET`  | `/tesis/download/progress/:jobId/stream` | Stream de progreso (SSE)               |
+| `GET`  | `/tesis/download/result/:jobId`          | Descargar archivo ZIP resultante       |
 
 ### Otros Recursos
 
@@ -110,16 +114,19 @@ Backend RESTful API para la gestión de tesis universitarias, desarrollado con N
 ## 🔍 Ejemplos de uso
 
 ### Filtrar tesis con paginación y ordenamiento
+
 ```bash
 GET /tesis?page=1&limit=10&sortBy=fecha&order=desc&estado=aprobado&id_sede=1
 ```
 
 ### Buscar tesis por jurado específico
+
 ```bash
 GET /tesis?id_jurado=5
 ```
 
 ### Descargar todas las tesis
+
 ```bash
 # 1. Iniciar descarga
 GET /tesis/download/all
