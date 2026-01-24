@@ -5,6 +5,8 @@ const sequelize = new Sequelize("database", "username", "password", {
   dialect: "mysql", // Puedes usar el dialecto que prefieras
 });
 
+// Definición de modelos Sequelize (Posiblemente legado o alternativo)
+
 const Tesis = sequelize.define(
   "Tesis",
   {
@@ -78,6 +80,8 @@ const Carrera = sequelize.define(
   { timestamps: false },
 );
 
+// Modelos de Tablas Intermedias
+
 const CarreraTesis = sequelize.define(
   "CarreraTesis",
   {},
@@ -95,6 +99,8 @@ const CarreraEstudiante = sequelize.define(
   {},
   { timestamps: false },
 );
+
+// Definición de Relaciones
 
 Estudiante.belongsToMany(Tesis, { through: EstudianteTesis });
 Tesis.belongsToMany(Estudiante, { through: EstudianteTesis });

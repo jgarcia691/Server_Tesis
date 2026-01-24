@@ -6,6 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class ProfesorRepository {
+  /**
+   * Obtiene todos los profesores.
+   * @returns {Promise<Array>} Lista de profesores.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -17,11 +21,19 @@ export class ProfesorRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en ProfesorRepository.getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en ProfesorRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Obtiene un profesor por su CI.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object|null>} Profesor o null.
+   */
   static async getProfesor(ci) {
     try {
       const result = await db.execute({
@@ -35,11 +47,19 @@ export class ProfesorRepository {
       });
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (err) {
-      console.error("Error en ProfesorRepository.getProfesor:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en ProfesorRepository.getProfesor:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea un nuevo profesor en la BD.
+   * @param {Object} params - Datos del profesor.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async create({ ci, ci_type, nombre, apellido, email, telefono }) {
     const trx = await db.transaction();
     try {
@@ -55,12 +75,21 @@ export class ProfesorRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en ProfesorRepository.create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en ProfesorRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }
 
   // 💡 SE ELIMINÓ LA FUNCIÓN 'update' DUPLICADA
+  /**
+   * Actualiza los datos de un profesor.
+   * @param {number} ci - CI del profesor.
+   * @param {Object} params - Datos a actualizar.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async update(ci, { ci_type, nombre, apellido, email, telefono }) {
     const trx = await db.transaction();
     try {
@@ -72,11 +101,19 @@ export class ProfesorRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en ProfesorRepository.update:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en ProfesorRepository.update:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Elimina un profesor.
+   * @param {number} ci - CI del profesor.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async delete(ci) {
     const trx = await db.transaction();
     try {
@@ -92,7 +129,10 @@ export class ProfesorRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en ProfesorRepository.delete:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en ProfesorRepository.delete:",
+        err.message,
+      );
       throw err;
     }
   }

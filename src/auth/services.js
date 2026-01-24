@@ -7,31 +7,51 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const LoginService = {
+  /**
+   * Busca un usuario por email y contraseña.
+   * @param {string} email - Correo electrónico del usuario.
+   * @param {string} password - Contraseña en texto plano.
+   * @returns {Promise<Object|null>} El usuario autenticado o null si falla.
+   */
   async findByEmailAndPassword(email, password) {
     try {
       const user = await LoginRepository.findByEmail(email);
 
       if (!user) {
-        console.log("No se encontró ningún usuario con el correo:", email);
+        console.log(
+          "DEPURACIÓN: No se encontró ningún usuario con el correo:",
+          email,
+        );
         return null;
       }
 
-      console.log("Comparando clave...");
+      console.log("DEPURACIÓN: Comparando clave...");
 
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        console.log("❌ La contraseña no coincide");
+        console.log("DEPURACIÓN: ❌ La contraseña no coincide");
         return null;
       }
 
-      console.log("✅ Contraseña válida");
+      console.log("DEPURACIÓN: ✅ Contraseña válida");
       return user;
     } catch (error) {
-      console.error("💥 Error en LoginService.findByEmailAndPassword:", error);
+      console.error(
+        "DEPURACIÓN: 💥 Error en LoginService.findByEmailAndPassword:",
+        error,
+      );
       throw error;
     }
   },
 
+  /**
+   * Registra un nuevo usuario en el sistema.
+   * @param {number} user_ci - Cédula de identidad (clave foránea).
+   * @param {string} user_type - Tipo de usuario (estudiante, profesor, encargado).
+   * @param {string} password - Contraseña en texto plano.
+   * @returns {Promise<Object>} Resultado de la creación.
+   * @throws {Error} Si el usuario ya existe.
+   */
   async register(user_ci, user_type, password) {
     try {
       const existingUser = await LoginRepository.findByCi(user_ci);
@@ -43,10 +63,10 @@ const LoginService = {
       return await LoginRepository.createUser(
         user_ci,
         user_type,
-        hashedPassword
+        hashedPassword,
       );
     } catch (error) {
-      console.error("💥 Error en LoginService.register:", error);
+      console.error("DEPURACIÓN: 💥 Error en LoginService.register:", error);
       throw error;
     }
   },

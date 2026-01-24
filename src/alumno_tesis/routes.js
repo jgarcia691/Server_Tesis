@@ -13,7 +13,7 @@ const router = express.Router();
 // Obtener todos los registros de Alumno_tesis
 router.get("/", getAlumnoTesisController);
 
-// Obtener  registros de Alumno_tesis por su id
+// Obtener registros de Alumno_tesis por su id
 router.get("/:id", getAlumnoTesisByIdController);
 
 // Crear un nuevo registro en Alumno_tesis

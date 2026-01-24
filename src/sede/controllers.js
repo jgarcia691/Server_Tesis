@@ -6,6 +6,12 @@ const __dirname = path.dirname(__filename);
 
 import { SedeService } from "./services.js";
 
+/**
+ * Obtiene todas las sedes registradas.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const getsedecontroller = async (req, res, next) => {
   try {
     const sedes = await SedeService.getAll();
@@ -15,6 +21,12 @@ export const getsedecontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Busca una sede por su ID.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const getsedebyidcontroller = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -40,17 +52,21 @@ export const getsedebyidcontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Crea una nueva sede.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const postsedecontroller = async (req, res, next) => {
   try {
     const { id, nombre, Direccion, telefono } = req.body;
 
     if (!id || !nombre || !Direccion || !telefono) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Todos los campos son obligatorios: id, nombre, Direccion, telefono",
-        });
+      return res.status(400).json({
+        message:
+          "Todos los campos son obligatorios: id, nombre, Direccion, telefono",
+      });
     }
 
     const idNumber = Number(id);
@@ -62,7 +78,7 @@ export const postsedecontroller = async (req, res, next) => {
     ) {
       return res.status(400).json({
         message:
-          "id y telefono deben ser números; nombre y Direccion deben ser cadenas.",
+          "id debe ser un número; nombre, Direccion y telefono deben ser cadenas.",
       });
     }
 
@@ -73,6 +89,12 @@ export const postsedecontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Elimina una sede por su ID.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const deletesedecontroller = async (req, res, next) => {
   try {
     const { id } = req.params;

@@ -30,7 +30,11 @@ setInterval(
   30 * 60 * 1000,
 ); // Ejecutar cada 30 minutos
 
-// --- Función Auxiliar para Normalizar Estado ---
+/**
+ * Normaliza el estado de una tesis para asegurar consistencia en la base de datos.
+ * @param {string} estadoBruto - El estado recibido (ej: "En REVISION").
+ * @returns {string} El estado normalizado (ej: "en revisión").
+ */
 const normalizeEstado = (estadoBruto) => {
   if (!estadoBruto) return "pendiente";
   const estadoLimpio = estadoBruto.toLowerCase().trim();
@@ -45,7 +49,11 @@ const normalizeEstado = (estadoBruto) => {
   return "pendiente";
 };
 
-// --- Función Auxiliar para asegurar que los IDs sean un Array ---
+/**
+ * Asegura que el dato proporcionado sea un array.
+ * @param {any} data - El dato a verificar.
+ * @returns {Array} Un array con los datos.
+ */
 const ensureArray = (data) => {
   if (!data) return [];
   if (Array.isArray(data)) return data;
@@ -53,11 +61,14 @@ const ensureArray = (data) => {
   return [];
 };
 
-// --- OBTENER TODAS LAS TESIS (CON AUTORES Y JURADOS) ---
+/**
+ * Obtiene todas las tesis con soporte de paginación y filtros.
+ * Filtros soportados: cadena (búsqueda general), nombre, estado, sede, tutor, encargado, estudiante, jurado, fechas.
+ */
 export const getTesis = async (req, res, next) => {
   try {
-    // Debug: Log de parámetros recibidos
-    console.log("DEBUG: Parámetros recibidos:", req.query);
+    // Depuración: Log de parámetros recibidos
+    console.log("DEPURACIÓN: Parámetros recibidos:", req.query);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 9;
@@ -178,9 +189,9 @@ export const getTesis = async (req, res, next) => {
         ? `WHERE ${whereConditions.join(" AND ")}`
         : "";
 
-    // Debug: Log de filtros aplicados
-    console.log("DEBUG: Filtros aplicados:", whereConditions);
-    console.log("DEBUG: Argumentos de query:", queryArgs);
+    // Depuración: Log de filtros aplicados
+    console.log("DEPURACIÓN: Filtros aplicados:", whereConditions);
+    console.log("DEPURACIÓN: Argumentos de query:", queryArgs);
 
     // Construir la consulta base con JOINs necesarios
     // Siempre incluimos los JOINs para obtener autores, jurados, encargado y tutor
@@ -202,17 +213,16 @@ export const getTesis = async (req, res, next) => {
     // Obtener el conteo total de tesis con filtros aplicados
     // Usamos DISTINCT porque los JOINs pueden duplicar registros
     const countSql = `SELECT COUNT(DISTINCT t.id) as total ${baseQuery}`;
-    console.log("DEBUG: Query de conteo:", countSql);
+    console.log("DEPURACIÓN: Query de conteo:", countSql);
 
     const countResult = await db.execute({
       sql: countSql,
       args: queryArgs,
     });
     const total = countResult.rows[0].total;
-    console.log("DEBUG: Total de registros después de filtros:", total);
+    console.log("DEPURACIÓN: Total de registros después de filtros:", total);
 
     // Construir la consulta principal con filtros
-    // 💡 CORRECCIÓN: Se añadieron t.id_encargado y t.id_tutor al SELECT
     const result = await db.execute({
       sql: `
         SELECT
@@ -247,7 +257,7 @@ export const getTesis = async (req, res, next) => {
     });
 
     console.log(
-      "DEBUG: Registros obtenidos en esta página:",
+      "DEPURACIÓN: Registros obtenidos en esta página:",
       result.rows.length,
     );
 
@@ -266,14 +276,17 @@ export const getTesis = async (req, res, next) => {
       data: tesisConAutores,
     });
   } catch (err) {
-    console.error("DEBUG: Error en getTesis:", err);
+    console.error("DEPURACIÓN: Error en getTesis:", err);
     next(err);
   }
 };
 
+/**
+ * Obtiene los detalles de una tesis específica por su ID.
+ * Incluye autores, jurados, encargado y tutor.
+ */
 export const getTesisById = async (req, res, next) => {
   const { id } = req.params;
-  // 💡 CORRECCIÓN: Asegurando que id_encargado y id_tutor estén en el SELECT también aquí
   const sql = `
     SELECT
       t.id, t.nombre, t.id_encargado, t.id_tutor, t.id_sede, t.fecha, t.estado, t.archivo_url,
@@ -311,6 +324,9 @@ export const getTesisById = async (req, res, next) => {
   }
 };
 
+/**
+ * Busca tesis por nombre utilizando coincidencia parcial (LIKE).
+ */
 export const getTesisByName = async (req, res, next) => {
   const { nombre } = req.params;
   const page = parseInt(req.query.page) || 1;
@@ -336,7 +352,6 @@ export const getTesisByName = async (req, res, next) => {
       });
     }
 
-    // 💡 CORRECCIÓN: Se añadieron t.id_encargado y t.id_tutor al SELECT
     const sql = `
     SELECT
       t.id, t.nombre, t.id_sede, t.id_encargado, t.id_tutor, t.fecha, t.estado,
@@ -397,7 +412,7 @@ export const getTesisByName = async (req, res, next) => {
   }
 };
 
-// --- OBTENER AUTORES DE UNA TESIS (Ruta restaurada) ---
+// --- OBTENER AUTORES DE UNA TESIS ---
 export const getTesisAutores = async (req, res, next) => {
   const { id } = req.params;
   const sql = `
@@ -416,11 +431,14 @@ export const getTesisAutores = async (req, res, next) => {
   }
 };
 
-// --- CREAR NUEVA TESIS (POST) ---
+/**
+ * Crea una nueva tesis.
+ * Incluye la carga de archivo PDF a TeraBox y actualización de base de datos.
+ */
 export const uploadTesis = async (req, res, next) => {
-  console.log("DEBUG: Iniciando uploadTesis");
-  console.log("DEBUG: req.body:", req.body);
-  console.log("DEBUG: req.file:", req.file);
+  console.log("DEPURACIÓN: Iniciando uploadTesis");
+  console.log("DEPURACIÓN: req.body:", req.body);
+  console.log("DEPURACIÓN: req.file:", req.file);
 
   const {
     id,
@@ -468,13 +486,13 @@ export const uploadTesis = async (req, res, next) => {
   try {
     const archivo_pdf = Buffer.from(req.file.buffer);
     console.log(
-      `DEBUG: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`,
+      `DEPURACIÓN: Buffer de archivo PDF creado con tamaño: ${archivo_pdf.length}`,
     );
 
     const idEstudiantesArray = ensureArray(id_estudiantes);
     const autoresDetails = [];
 
-    // Consultas a Persona fuera de la transacción (evita timeout mientras sube el archivo)
+    // Consultas a Persona fuera de la transacción (evita tiempo de espera mientras sube el archivo)
     for (const autorId of idEstudiantesArray) {
       const autorIdNum = parseInt(autorId, 10);
       if (isNaN(autorIdNum)) continue;
@@ -497,7 +515,7 @@ export const uploadTesis = async (req, res, next) => {
     let archivoUrl = null;
     let teraboxFsId = null;
     try {
-      console.log("DEBUG: Subiendo a Terabox...");
+      console.log("DEPURACIÓN: Subiendo a Terabox...");
       const details = await uploadBufferToTerabox(
         archivo_pdf,
         req.file.originalname,
@@ -509,7 +527,7 @@ export const uploadTesis = async (req, res, next) => {
         archivoUrl = link?.downloadLink || null;
       }
       console.log(
-        `DEBUG: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`,
+        `DEPURACIÓN: Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`,
       );
     } catch (e) {
       throw new Error(`Error subiendo a Terabox: ${e.message}`);
@@ -536,7 +554,7 @@ export const uploadTesis = async (req, res, next) => {
 
     const result = await trx.execute({ sql: sqlTesis, args: params });
     const newTesisId = id;
-    console.log(`DEBUG: Tesis añadida con ID: ${newTesisId}`);
+    console.log(`DEPURACIÓN: Tesis añadida con ID: ${newTesisId}`);
 
     for (const autorIdStr of idEstudiantesArray) {
       const autorId = parseInt(autorIdStr, 10);
@@ -559,7 +577,7 @@ export const uploadTesis = async (req, res, next) => {
 
     await trx.commit();
 
-    console.log("DEBUG: Proceso de subida de tesis finalizado con éxito.");
+    console.log("DEPURACIÓN: Proceso de subida de tesis finalizado con éxito.");
     return res.json({
       message: "Tesis subida correctamente y autor asociado",
       id_tesis: newTesisId,
@@ -576,11 +594,14 @@ export const uploadTesis = async (req, res, next) => {
   }
 };
 
-// --- ACTUALIZAR TESIS (PUT) ---
+/**
+ * Actualiza una tesis existente.
+ * Permite actualizar archivo y metadatos.
+ */
 export const updateTesis = async (req, res, next) => {
   const { id } = req.params;
-  console.log(`DEBUG: Iniciando updateTesis para ID: ${id}`);
-  console.log("DEBUG: req.body:", req.body);
+  console.log(`DEPURACIÓN: Iniciando updateTesis para ID: ${id}`);
+  console.log("DEPURACIÓN: req.body:", req.body);
 
   const {
     nombre,
@@ -602,7 +623,7 @@ export const updateTesis = async (req, res, next) => {
     return next(new Error("El campo id_sede debe ser un número."));
   }
 
-  // No abrir la transacción todavía para evitar timeouts si hay subida de archivo
+  // No abrir la transacción todavía para evitar tiempos de espera excesivos si hay subida de archivo
   let trx = null;
 
   try {
@@ -610,11 +631,11 @@ export const updateTesis = async (req, res, next) => {
     let teraboxFsId = null;
 
     if (req.file && req.file.buffer) {
-      console.log("DEBUG: Subiendo nuevo archivo PDF a Terabox...");
+      console.log("DEPURACIÓN: Subiendo nuevo archivo PDF a Terabox...");
       const archivo_pdf = Buffer.from(req.file.buffer);
       const autoresDetails = [];
 
-      // Obtener detalles de autores SIN usar la transacción (evitar timeouts durante la subida)
+      // Obtener detalles de autores SIN usar la transacción (evitar tiempos de espera durante la subida)
       for (const autorId of idEstudiantesArray) {
         const autorIdNum = parseInt(autorId, 10);
         if (isNaN(autorIdNum)) continue;
@@ -646,14 +667,14 @@ export const updateTesis = async (req, res, next) => {
           archivoUrl = link?.downloadLink || null;
         }
         console.log(
-          `DEBUG: Nuevo Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`,
+          `DEPURACIÓN: Nuevo Terabox - fs_id: ${teraboxFsId}, dlink: ${archivoUrl}`,
         );
       } catch (e) {
         throw new Error(`Error subiendo a Terabox: ${e.message}`);
       }
     }
 
-    // Crear la transacción justo antes del UPDATE (o la crear si aún no existe)
+    // Crear la transacción justo antes del UPDATE (o la crea si aún no existe)
     if (!trx) trx = await db.transaction();
 
     let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?, id_encargado = ?, id_sede = ?, id_tutor = ?`;
@@ -726,14 +747,19 @@ export const updateTesis = async (req, res, next) => {
 };
 
 // --- DESCARGAR TESIS (Versión Final: Fix Caracteres Especiales) ---
+/**
+ * Descarga el archivo PDF de una tesis.
+ * Intenta obtener el enlace de TeraBox, o usa el de respaldo si falla.
+ * El nombre del archivo se sanitiza para evitar problemas de codificación.
+ */
 export const downloadTesis = async (req, res, next) => {
   const { id } = req.params;
 
-  // Headers manuales para CORS
+  // Encabezados manuales para CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
 
-  console.log(`[START] Descarga iniciada para ID: ${id}`);
+  console.log(`[INICIO] Descarga iniciada para ID: ${id}`);
 
   try {
     const result = await db.execute({
@@ -747,7 +773,7 @@ export const downloadTesis = async (req, res, next) => {
       return res.status(404).json({ message: "Tesis no encontrada" });
     }
 
-    // --- CORRECCIÓN CRÍTICA AQUI ---
+    // --- CORRECCIÓN CRÍTICA AQUÍ ---
     // 1. normalize('NFD'): Separa la letra de la tilde (ej: ó se convierte en o + ´)
     // 2. replace(/[\u0300-\u036f]/g, ""): Elimina las marcas de tilde sueltas
     // 3. replace(...): Elimina cualquier otro caracter raro
@@ -805,11 +831,11 @@ export const downloadTesis = async (req, res, next) => {
     response.data.pipe(res);
 
     response.data.on("error", (err) => {
-      console.error("[STREAM ERROR]", err);
+      console.error("[ERROR EN STREAM]", err);
       if (!res.headersSent) res.status(502).end();
     });
   } catch (err) {
-    console.error(`[CRITICAL ERROR]`, err);
+    console.error(`[ERROR CRÍTICO]`, err);
     if (!res.headersSent) {
       res.status(500).json({ message: `Error interno: ${err.message}` });
     }
@@ -817,6 +843,11 @@ export const downloadTesis = async (req, res, next) => {
 };
 
 // --- DESCARGAR TODAS LAS TESIS (Inicia proceso en background) ---
+/**
+ * Inicia la descarga masiva de todas las tesis creando un archivo ZIP.
+ * El proceso se ejecuta en segundo plano.
+ * Retorna un `jobId` para hacer seguimiento del progreso.
+ */
 export const downloadAllTesis = async (req, res, next) => {
   try {
     console.log("=== ENDPOINT downloadAllTesis LLAMADO ===");
@@ -858,6 +889,10 @@ export const downloadAllTesis = async (req, res, next) => {
 };
 
 // --- OBTENER PROGRESO DE DESCARGA (Polling) ---
+/**
+ * Obtiene el progreso actual de una tarea de descarga masiva.
+ * Usado para polling desde el frontend.
+ */
 export const getDownloadProgress = async (req, res, next) => {
   try {
     const { jobId } = req.params;
@@ -866,14 +901,14 @@ export const getDownloadProgress = async (req, res, next) => {
     const progress = downloadProgress.get(jobId);
 
     if (!progress) {
-      console.log(`[${jobId}] ❌ Job no encontrado`);
+      console.log(`[${jobId}] ❌ Trabajo no encontrado`);
       return res.status(404).json({
-        error: "Job no encontrado. El jobId puede haber expirado o no existe.",
+        error: "Trabajo no encontrado. El ID puede haber expirado o no existe.",
       });
     }
 
     console.log(
-      `[${jobId}] 📊 Status actual: "${progress.status}", Progreso: ${progress.progress}%`,
+      `[${jobId}] 📊 Estado actual: "${progress.status}", Progreso: ${progress.progress}%`,
     );
 
     // Preparar respuesta sin el buffer (muy pesado)
@@ -894,9 +929,9 @@ export const getDownloadProgress = async (req, res, next) => {
     };
 
     console.log(
-      `[${jobId}] 📤 Enviando respuesta: status="${
+      `[${jobId}] 📤 Enviando respuesta: estado="${
         response.status
-      }", downloadUrl=${response.downloadUrl ? "presente" : "null"}`,
+      }", URL de descarga=${response.downloadUrl ? "presente" : "nulo"}`,
     );
     res.json(response);
   } catch (err) {
@@ -906,6 +941,9 @@ export const getDownloadProgress = async (req, res, next) => {
 };
 
 // --- STREAM DE PROGRESO DE DESCARGA (Server-Sent Events) ---
+/**
+ * Transmite el progreso de la descarga en tiempo real usando Server-Sent Events (SSE).
+ */
 export const streamDownloadProgress = async (req, res, next) => {
   try {
     const { jobId } = req.params;
@@ -914,9 +952,11 @@ export const streamDownloadProgress = async (req, res, next) => {
     const progress = downloadProgress.get(jobId);
 
     if (!progress) {
-      console.log(`[${jobId}] ❌ Job no encontrado para SSE`);
+      console.log(`[${jobId}] ❌ Trabajo no encontrado para SSE`);
       res.writeHead(404, { "Content-Type": "text/event-stream" });
-      res.write(`data: ${JSON.stringify({ error: "Job no encontrado" })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ error: "Trabajo no encontrado" })}\n\n`,
+      );
       res.end();
       return;
     }
@@ -942,16 +982,16 @@ export const streamDownloadProgress = async (req, res, next) => {
       try {
         const currentProgress = downloadProgress.get(jobId);
         if (!currentProgress) {
-          console.log(`[${jobId}] ❌ Job eliminado durante SSE`);
+          console.log(`[${jobId}] ❌ Trabajo eliminado durante SSE`);
           res.write(
-            `data: ${JSON.stringify({ error: "Job no encontrado" })}\n\n`,
+            `data: ${JSON.stringify({ error: "Trabajo no encontrado" })}\n\n`,
           );
           res.end();
           isClosed = true;
           return false;
         }
 
-        // Enviar si el status cambió, el progreso cambió, o es la primera vez
+        // Enviar si el estado cambió, el progreso cambió, o es la primera vez
         const statusChanged = lastStatus !== currentProgress.status;
         const progressChanged =
           lastProgress !== currentProgress.progress ||
@@ -961,7 +1001,7 @@ export const streamDownloadProgress = async (req, res, next) => {
 
         if (statusChanged) {
           console.log(
-            `[${jobId}] 📡 SSE: Status cambió de "${lastStatus}" a "${currentProgress.status}"`,
+            `[${jobId}] 📡 SSE: Estado cambió de "${lastStatus}" a "${currentProgress.status}"`,
           );
           lastStatus = currentProgress.status;
         }
@@ -1009,11 +1049,11 @@ export const streamDownloadProgress = async (req, res, next) => {
           currentProgress.status === "error"
         ) {
           console.log(
-            `[${jobId}] 📡 SSE: Status final detectado: "${currentProgress.status}"`,
+            `[${jobId}] 📡 SSE: Estado final detectado: "${currentProgress.status}"`,
           );
           console.log(
-            `[${jobId}] 📡 SSE: Enviando mensaje final con downloadUrl: ${
-              data.downloadUrl || "null"
+            `[${jobId}] 📡 SSE: Enviando mensaje final con URL de descarga: ${
+              data.downloadUrl || "nulo"
             }`,
           );
 
@@ -1108,6 +1148,9 @@ export const streamDownloadProgress = async (req, res, next) => {
 };
 
 // --- DESCARGAR RESULTADO DEL ZIP ---
+/**
+ * Entrega el archivo ZIP generado al completar la descarga masiva.
+ */
 export const downloadResult = async (req, res, next) => {
   try {
     const { jobId } = req.params;
@@ -1116,17 +1159,17 @@ export const downloadResult = async (req, res, next) => {
     const progress = downloadProgress.get(jobId);
 
     if (!progress) {
-      console.log(`[${jobId}] ❌ Job no encontrado para descarga`);
+      console.log(`[${jobId}] ❌ Trabajo no encontrado para descarga`);
       return res.status(404).json({
-        error: "Job no encontrado. El jobId puede haber expirado o no existe.",
+        error: "Trabajo no encontrado. El ID puede haber expirado o no existe.",
       });
     }
 
-    console.log(`[${jobId}] 📥 Status del job: "${progress.status}"`);
+    console.log(`[${jobId}] 📥 Estado del trabajo: "${progress.status}"`);
 
     if (progress.status !== "completed") {
       console.log(
-        `[${jobId}] ⏳ Proceso aún no completado. Status: "${progress.status}", Progreso: ${progress.progress}%`,
+        `[${jobId}] ⏳ Proceso aún no completado. Estado: "${progress.status}", Progreso: ${progress.progress}%`,
       );
       return res.status(400).json({
         error: "El proceso aún no ha completado.",
@@ -1137,7 +1180,7 @@ export const downloadResult = async (req, res, next) => {
 
     if (!progress.zipBuffer) {
       console.error(
-        `[${jobId}] ❌ ZIP buffer no disponible aunque status es "completed"`,
+        `[${jobId}] ❌ ZIP buffer no disponible aunque estado es "completed"`,
       );
       return res.status(500).json({
         error: "El archivo ZIP no está disponible.",
@@ -1173,6 +1216,10 @@ export const downloadResult = async (req, res, next) => {
 };
 
 // --- ELIMINAR TESIS ---
+/**
+ * Elimina una tesis y todas sus relaciones (autores, jurados).
+ * Mantiene la integridad referencial borrando primero las tablas dependientes.
+ */
 export const deleteTesis = async (req, res, next) => {
   const { id } = req.params;
   const trx = await db.transaction();
@@ -1211,6 +1258,9 @@ export const deleteTesis = async (req, res, next) => {
   }
 };
 
+/**
+ * Actualiza únicamente el estado de una tesis.
+ */
 export const updateTesisStatus = async (req, res, next) => {
   const { id } = req.params;
   const { estado } = req.body;
@@ -1233,6 +1283,10 @@ export const updateTesisStatus = async (req, res, next) => {
 };
 
 // --- Función para procesar la descarga en background ---
+/**
+ * Procesa la generación del archivo ZIP con todas las tesis.
+ * Se ejecuta de manera asíncrona.
+ */
 async function processDownloadAllTesis(jobId) {
   const progress = downloadProgress.get(jobId);
   if (!progress) return;
@@ -1463,7 +1517,7 @@ async function processDownloadAllTesis(jobId) {
     progress.current = progress.total;
     progress.currentTesis = null;
 
-    console.log(`[${jobId}] ✅ Status actualizado a COMPLETED`);
+    console.log(`[${jobId}] ✅ Estado actualizado a COMPLETED`);
     console.log(
       `[${jobId}] ZIP generado correctamente: ${finalBuffer.length} bytes`,
     );
@@ -1481,7 +1535,7 @@ async function processDownloadAllTesis(jobId) {
     const verifyProgress = downloadProgress.get(jobId);
     if (verifyProgress && verifyProgress.status === "completed") {
       console.log(
-        `[${jobId}] ✅ Verificación: Status guardado correctamente como "completed"`,
+        `[${jobId}] ✅ Verificación: Estado guardado correctamente como "completed"`,
       );
       console.log(
         `[${jobId}] ✅ ZIP buffer disponible: ${
@@ -1489,9 +1543,9 @@ async function processDownloadAllTesis(jobId) {
         }`,
       );
     } else {
-      console.error(`[${jobId}] ❌ ERROR: Status NO se guardó correctamente!`);
+      console.error(`[${jobId}] ❌ ERROR: Estado NO se guardó correctamente!`);
       console.error(
-        `[${jobId}] Status actual en verificación: ${
+        `[${jobId}] Estado actual en verificación: ${
           verifyProgress?.status || "undefined"
         }`,
       );

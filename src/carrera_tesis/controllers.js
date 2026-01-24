@@ -8,6 +8,12 @@ const __dirname = path.dirname(__filename);
 
 import { CarreraTesisService } from "./services.js";
 
+/**
+ * Obtiene todas las relaciones carrera-tesis.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const getCarreraTesisController = async (req, res, next) => {
   try {
     const result = await CarreraTesisService.getAll();
@@ -17,6 +23,12 @@ export const getCarreraTesisController = async (req, res, next) => {
   }
 };
 
+/**
+ * Crea una nueva relación carrera-tesis.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const postCarreraTesisController = async (req, res, next) => {
   try {
     const { id, id_carrera, id_tesis } = req.body;
@@ -48,16 +60,20 @@ export const postCarreraTesisController = async (req, res, next) => {
   }
 };
 
+/**
+ * Elimina una relación carrera-tesis por ID.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const deleteCarreraTesisController = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
     if (!id || isNaN(id)) {
-      return res
-        .status(400)
-        .json({
-          message: "El campo id es obligatorio y debe ser un número válido.",
-        });
+      return res.status(400).json({
+        message: "El campo id es obligatorio y debe ser un número válido.",
+      });
     }
 
     const result = await CarreraTesisService.delete(id);

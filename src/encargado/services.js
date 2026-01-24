@@ -8,33 +8,51 @@ const __dirname = path.dirname(__filename);
 import { EncargadoRepository } from "./repositories.js";
 
 export class EncargadoService {
+  /**
+   * Obtiene todos los encargados registrados.
+   * @returns {Promise<Object>} Resultado con la lista de encargados.
+   */
   static async getAll() {
     try {
-      console.log("Obteniendo todos los encargados...");
+      console.log("DEPURACIÓN: Obteniendo todos los encargados...");
       const encargados = await EncargadoRepository.getAll();
-      console.log("Encargados obtenidos:", encargados);
+      console.log("DEPURACIÓN: Encargados obtenidos:", encargados);
       return { status: "success", data: encargados };
     } catch (error) {
-      console.error("Error al obtener encargados:", error.message);
+      console.error("DEPURACIÓN: Error al obtener encargados:", error.message);
       throw new Error("No se pudieron obtener los encargados.");
     }
   }
 
+  /**
+   * Obtiene un encargado por su CI.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object>} Resultado con el encargado encontrado.
+   */
   static async getEncargado(ci) {
     try {
-      console.log("Obteniendo encargado", ci);
+      console.log("DEPURACIÓN: Obteniendo encargado", ci);
       const encargado = await EncargadoRepository.getEncargado(ci);
-      console.log("encargado obtenido: ", encargado);
+      console.log("DEPURACIÓN: Encargado obtenido: ", encargado);
       return { status: "success", data: encargado };
     } catch (error) {
-      console.error("Error al obtener encargado: ", error.message);
+      console.error("DEPURACIÓN: Error al obtener encargado: ", error.message);
       throw new Error("No se pudo obtener el encargado.");
     }
   }
 
+  /**
+   * Crea un nuevo encargado.
+   * Valida datos, crea registro y usuario asociado.
+   * @param {Object} data - Datos del encargado.
+   * @returns {Promise<Object>} Resultado de la creación.
+   */
   static async create(data) {
     try {
-      console.log("Creando un nuevo encargado con los datos:", data);
+      console.log(
+        "DEPURACIÓN: Creando un nuevo encargado con los datos:",
+        data,
+      );
 
       // Validaciones
       if (
@@ -48,7 +66,7 @@ export class EncargadoService {
         !data.id_sede
       ) {
         throw new Error(
-          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, telefono, email, password, id_sede"
+          "Todos los campos son obligatorios: ci, ci_type, nombre, apellido, telefono, email, password, id_sede",
         );
       }
       if (
@@ -62,13 +80,13 @@ export class EncargadoService {
         typeof data.id_sede !== "number"
       ) {
         throw new Error(
-          "ci y sede deben ser números; ci_type, nombre, apellido, email, telefono y password deben ser cadenas."
+          "ci y sede deben ser números; ci_type, nombre, apellido, email, telefono y password deben ser cadenas.",
         );
       }
 
       const resultado = await EncargadoRepository.create(data);
       await LoginService.register(data.ci, "encargado", data.password);
-      console.log("Encargado creado exitosamente:", resultado);
+      console.log("DEPURACIÓN: Encargado creado exitosamente:", resultado);
       return {
         status: "success",
         message: "Encargado creado correctamente",
@@ -81,14 +99,23 @@ export class EncargadoService {
       ) {
         throw new Error("El correo electrónico ya está registrado.");
       }
-      console.error("Error al crear encargado:", error.message);
+      console.error("DEPURACIÓN: Error al crear encargado:", error.message);
       throw new Error("No se pudo crear el encargado: " + error.message);
     }
   }
 
+  /**
+   * Actualiza el encargado identificado por CI.
+   * @param {number} ci - Cédula de identidad.
+   * @param {Object} data - Datos a actualizar.
+   * @returns {Promise<Object>} Resultado de la actualización.
+   */
   static async update(ci, data) {
     try {
-      console.log(`Actualizando encargado con CI: ${ci}, datos:`, data);
+      console.log(
+        `DEPURACIÓN: Actualizando encargado con CI: ${ci}, datos:`,
+        data,
+      );
 
       // Validaciones
       if (
@@ -99,8 +126,8 @@ export class EncargadoService {
         !data.email ||
         !data.id_sede
       ) {
-        throw new Error( // Se eliminó 'password' de aquí
-          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, email, id_sede" // Se eliminó 'password' de aquí
+        throw new Error(
+          "Todos los campos son obligatorios: ci, nombre, apellido, telefono, email, id_sede",
         );
       }
       if (
@@ -111,7 +138,7 @@ export class EncargadoService {
         typeof data.id_sede !== "number"
       ) {
         throw new Error(
-          "ci y id_sede deben ser números; nombre, apellido, email y telefono deben ser cadenas." // Se eliminó 'password' de aquí
+          "ci y id_sede deben ser números; nombre, apellido, email y telefono deben ser cadenas.",
         );
       }
 
@@ -119,8 +146,8 @@ export class EncargadoService {
 
       const resultado = await EncargadoRepository.update(ci, updatedData);
       console.log(
-        `Encargado con CI ${ci} actualizado exitosamente:`,
-        resultado
+        `DEPURACIÓN: Encargado con CI ${ci} actualizado exitosamente:`,
+        resultado,
       );
       return {
         status: "success",
@@ -129,30 +156,38 @@ export class EncargadoService {
       };
     } catch (error) {
       console.error(
-        `Error al actualizar encargado con CI ${ci}:`,
-        error.message
+        `DEPURACIÓN: Error al actualizar encargado con CI ${ci}:`,
+        error.message,
       );
       throw new Error("No se pudo actualizar el encargado: " + error.message);
     }
   }
 
+  /**
+   * Elimina un encargado.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(ci) {
     try {
-      console.log(`Eliminando encargado con CI: ${ci}...`);
+      console.log(`DEPURACIÓN: Eliminando encargado con CI: ${ci}...`);
 
       if (!ci) throw new Error("El campo ci es obligatorio");
       if (typeof ci !== "number")
         throw new Error("El campo ci debe ser un número");
 
       const resultado = await EncargadoRepository.delete(ci);
-      console.log(`Encargado con CI ${ci} eliminado exitosamente.`);
+      console.log(`DEPURACIÓN: Encargado con CI ${ci} eliminado exitosamente.`);
       return {
         status: "success",
         message: "Encargado eliminado correctamente",
         data: resultado,
       };
     } catch (error) {
-      console.error(`Error al eliminar encargado con CI ${ci}:`, error.message);
+      console.error(
+        `DEPURACIÓN: Error al eliminar encargado con CI ${ci}:`,
+        error.message,
+      );
       throw new Error("No se pudo eliminar el encargado: " + error.message);
     }
   }

@@ -7,18 +7,27 @@ const __dirname = path.dirname(__filename);
 import { SedeRepository } from "./repositories.js";
 
 export class SedeService {
+  /**
+   * Obtiene todas las sedes.
+   * @returns {Promise<Object>} Resultado con la lista de sedes.
+   */
   static async getAll() {
     try {
-      console.log("Obteniendo todas las sedes...");
+      console.log("DEPURACIÓN: Obteniendo todas las sedes...");
       const sedes = await SedeRepository.getAll();
-      console.log("Sedes obtenidas:", sedes);
+      console.log("DEPURACIÓN: Sedes obtenidas:", sedes);
       return { status: "success", data: sedes };
     } catch (error) {
-      console.error("Error en SedeService.getAll:", error.message);
+      console.error("DEPURACIÓN: Error en SedeService.getAll:", error.message);
       throw new Error("No se pudieron obtener las sedes.");
     }
   }
 
+  /**
+   * Obtiene una sede por ID.
+   * @param {number} id - ID de la sede.
+   * @returns {Promise<Object>} Resultado con la sede.
+   */
   static async getById(id) {
     try {
       if (!id || typeof id !== "number" || isNaN(id)) {
@@ -27,18 +36,26 @@ export class SedeService {
         );
       }
 
-      console.log(`Obteniendo sede con ID: ${id}`);
+      console.log(`DEPURACIÓN: Obteniendo sede con ID: ${id}`);
       const sede = await SedeRepository.getById(id);
       if (!sede) {
         throw new Error(`La sede con ID ${id} no existe.`);
       }
       return { status: "success", data: sede };
     } catch (error) {
-      console.error(`Error en SedeService.getById (ID: ${id}):`, error.message);
+      console.error(
+        `DEPURACIÓN: Error en SedeService.getById (ID: ${id}):`,
+        error.message,
+      );
       throw new Error("No se pudo obtener la sede: " + error.message);
     }
   }
 
+  /**
+   * Crea una nueva sede.
+   * @param {Object} data - Datos de la sede.
+   * @returns {Promise<Object>} Resultado de la creación.
+   */
   static async create(data) {
     try {
       const { id, nombre, Direccion, telefono } = data;
@@ -61,7 +78,7 @@ export class SedeService {
         );
       }
 
-      console.log("Creando una nueva sede con los datos:", data);
+      console.log("DEPURACIÓN: Creando una nueva sede con los datos:", data);
       // Normalizar clave "Direccion" (mayúscula) a "direccion" que espera el repositorio
       const resultado = await SedeRepository.create({
         id: id,
@@ -69,18 +86,23 @@ export class SedeService {
         direccion: Direccion,
         telefono,
       });
-      console.log("Sede creada exitosamente:", resultado);
+      console.log("DEPURACIÓN: Sede creada exitosamente:", resultado);
       return {
         status: "success",
         message: "Sede creada correctamente",
         data: resultado,
       };
     } catch (error) {
-      console.error("Error en SedeService.create:", error.message);
+      console.error("DEPURACIÓN: Error en SedeService.create:", error.message);
       throw new Error("No se pudo crear la sede: " + error.message);
     }
   }
 
+  /**
+   * Elimina una sede.
+   * @param {number} id - ID de la sede.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(id) {
     try {
       if (!id || typeof id !== "number" || isNaN(id)) {
@@ -89,16 +111,19 @@ export class SedeService {
         );
       }
 
-      console.log(`Eliminando sede con ID: ${id}...`);
+      console.log(`DEPURACIÓN: Eliminando sede con ID: ${id}...`);
       const resultado = await SedeRepository.delete(id);
-      console.log(`Sede con ID ${id} eliminada exitosamente.`);
+      console.log(`DEPURACIÓN: Sede con ID ${id} eliminada exitosamente.`);
       return {
         status: "success",
         message: "Sede eliminada correctamente",
         data: resultado,
       };
     } catch (error) {
-      console.error(`Error en SedeService.delete (ID: ${id}):`, error.message);
+      console.error(
+        `DEPURACIÓN: Error en SedeService.delete (ID: ${id}):`,
+        error.message,
+      );
       throw new Error("No se pudo eliminar la sede: " + error.message);
     }
   }

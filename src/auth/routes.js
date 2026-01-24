@@ -8,7 +8,8 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-router.post("/login", postlogincontroller);
-router.post("/register", registerController);
+// Definición de rutas de autenticación
+router.post("/login", postlogincontroller); // Iniciar sesión
+router.post("/register", registerController); // Registrar nuevo usuario (solo para configuración inicial o admin)
 
 export default router;

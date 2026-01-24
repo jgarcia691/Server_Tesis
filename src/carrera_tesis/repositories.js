@@ -9,6 +9,10 @@ const __dirname = path.dirname(__filename);
 import db from "../../config/db.js";
 
 export class CarreraTesisRepository {
+  /**
+   * Obtiene todos los registros.
+   * @returns {Promise<Array>} Lista de registros.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -16,11 +20,19 @@ export class CarreraTesisRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraTesisRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea una asociación carrera-tesis.
+   * @param {Object} params - Datos del registro.
+   * @returns {Promise<Object>} Resultado de la inserción.
+   */
   static async create({ id, id_carrera, id_tesis }) {
     try {
       const result = await db.execute({
@@ -29,11 +41,19 @@ export class CarreraTesisRepository {
       });
       return result;
     } catch (err) {
-      console.error("Error en create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraTesisRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Elimina una asociación carrera-tesis.
+   * @param {number} id - ID del registro.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(id) {
     try {
       const result = await db.execute({
@@ -42,7 +62,10 @@ export class CarreraTesisRepository {
       });
       return result;
     } catch (err) {
-      console.error("Error en delete:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraTesisRepository.delete:",
+        err.message,
+      );
       throw err;
     }
   }

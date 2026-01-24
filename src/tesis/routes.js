@@ -27,19 +27,19 @@ const upload = multer({
 });
 
 // Definición de rutas
-// IMPORTANTE: Las rutas más específicas deben ir ANTES de las rutas con parámetros
-router.get("/tesis", getTesis); // Obtener todas las tesis
-router.get("/tesis/cadena/:nombre", getTesisByName); // Obtener una tesis que contenga x cadena en su nombre
-router.get("/tesis/download/all", downloadAllTesis); // Iniciar descarga de todas las tesis (devuelve jobId)
-router.get("/tesis/download/progress/:jobId/stream", streamDownloadProgress); // Stream de progreso (SSE)
-router.get("/tesis/download/progress/:jobId", getDownloadProgress); // Obtener progreso (Polling)
-router.get("/tesis/download/result/:jobId", downloadResult); // Descargar ZIP cuando esté listo
-router.get("/tesis/:id/download", downloadTesis); // Descargar un PDF de una tesis
-router.get("/tesis/:id/autores", getTesisAutores); // Obtener los autores de una tesis
-router.get("/tesis/:id", getTesisById); // Obtener una tesis por ID (DEBE ir al final)
-router.post("/tesis", upload.single("archivo_pdf"), uploadTesis); // Subir una nueva tesis con PDF
-router.delete("/tesis/:id", deleteTesis); // Eliminar una tesis
-router.put("/tesis/:id", upload.single("archivo_pdf"), updateTesis); // Actualizar una tesis
-router.put("/tesis/:id/status", updateTesisStatus);
+// IMPORTANTE: Las rutas más específicas deben ir ANTES de las rutas con parámetros dinámicos
+router.get("/tesis", getTesis); // Obtener todas las tesis con filtros opcionales
+router.get("/tesis/cadena/:nombre", getTesisByName); // Buscar tesis por coincidencia de nombre
+router.get("/tesis/download/all", downloadAllTesis); // Iniciar proceso de descarga masiva (retorna ID de trabajo)
+router.get("/tesis/download/progress/:jobId/stream", streamDownloadProgress); // Transmisión de progreso en tiempo real (SSE)
+router.get("/tesis/download/progress/:jobId", getDownloadProgress); // Consultar progreso de descarga por ID de trabajo
+router.get("/tesis/download/result/:jobId", downloadResult); // Descargar archivo ZIP finalizado
+router.get("/tesis/:id/download", downloadTesis); // Descargar el archivo PDF de una tesis específica
+router.get("/tesis/:id/autores", getTesisAutores); // Obtener lista de autores de una tesis
+router.get("/tesis/:id", getTesisById); // Obtener detalles completos de una tesis por ID
+router.post("/tesis", upload.single("archivo_pdf"), uploadTesis); // Crear nueva tesis subiendo archivo PDF
+router.delete("/tesis/:id", deleteTesis); // Eliminar una tesis y sus relaciones
+router.put("/tesis/:id", upload.single("archivo_pdf"), updateTesis); // Actualizar información y/o archivo de una tesis
+router.put("/tesis/:id/status", updateTesisStatus); // Actualizar el estado de una tesis
 
 export default router;

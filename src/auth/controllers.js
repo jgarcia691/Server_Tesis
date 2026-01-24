@@ -9,16 +9,22 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
+/**
+ * Inicia sesión de un usuario.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const postlogincontroller = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
-    console.log(" Intentando iniciar sesión con:", email);
+    console.log("DEPURACIÓN: Intentando iniciar sesión con:", email);
 
     const user = await LoginService.findByEmailAndPassword(email, password);
 
     if (!user) {
-      console.log(" Credenciales inválidas para:", email);
+      console.log("DEPURACIÓN: Credenciales inválidas para:", email);
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
@@ -32,7 +38,7 @@ export const postlogincontroller = async (req, res, next) => {
       expiresIn: "1h",
     });
 
-    console.log("Login exitoso para:", email);
+    console.log("DEPURACIÓN: Login exitoso para:", email);
 
     res.status(200).json({
       message: "Inicio de sesión exitoso",
@@ -50,6 +56,12 @@ export const postlogincontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Registra un nuevo usuario en la tabla específica (tabla hash/passwords).
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const registerController = async (req, res, next) => {
   const { user_ci, user_type, password } = req.body;
 

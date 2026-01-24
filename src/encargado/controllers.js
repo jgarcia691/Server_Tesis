@@ -6,6 +6,12 @@ const __dirname = path.dirname(__filename);
 
 import { EncargadoService } from "./services.js";
 
+/**
+ * Obtiene todos los encargados registrados.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const getallencargadocontroller = async (req, res, next) => {
   try {
     const encargados = await EncargadoService.getAll();
@@ -15,6 +21,12 @@ export const getallencargadocontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Obtiene un encargado específico por su Cédula de Identidad (CI).
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const getencargadocontroller = async (req, res, next) => {
   try {
     const { ci } = req.params;
@@ -31,6 +43,13 @@ export const getencargadocontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Crea un nuevo encargado.
+ * Requiere datos personales y credenciales.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const postencargadocontroller = async (req, res, next) => {
   try {
     const {
@@ -54,18 +73,14 @@ export const postencargadocontroller = async (req, res, next) => {
       !password ||
       !id_sede
     ) {
-      return next(
-        new Error(
-          "Todos los campos son obligatorios"
-        )
-      );
+      return next(new Error("Todos los campos son obligatorios"));
     }
 
     if (typeof ci !== "number" || typeof id_sede !== "number") {
       return next(
         new Error(
-          "Tipos de datos inválidos. Asegúrese de que ci e id_sede sean números."
-        )
+          "Tipos de datos inválidos. Asegúrese de que ci e id_sede sean números.",
+        ),
       );
     }
     await EncargadoService.create({
@@ -84,6 +99,13 @@ export const postencargadocontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Actualiza la información de un encargado existente.
+ * Nota: La contraseña no se actualiza a través de este endpoint.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const putencargadocontroller = async (req, res, next) => {
   try {
     const ci = Number(req.params.ci);
@@ -92,8 +114,8 @@ export const putencargadocontroller = async (req, res, next) => {
     if (!ci || !nombre || !apellido || !email || !telefono || !id_sede) {
       return next(
         new Error(
-          "Todos los campos son obligatorios: nombre, apellido, telefono, email, id_sede"
-        )
+          "Todos los campos son obligatorios: nombre, apellido, telefono, email, id_sede",
+        ),
       );
     }
 
@@ -101,7 +123,7 @@ export const putencargadocontroller = async (req, res, next) => {
       return next(new Error("El CI y el id_sede deben ser números válidos."));
     }
 
-    // ⚠️ La actualización de contraseña debe ser un endpoint separado.
+    // ⚠️ La actualización de contraseña debe ser un endpoint separado (si se implementa).
     await EncargadoService.update(ci, {
       nombre,
       apellido,
@@ -116,6 +138,12 @@ export const putencargadocontroller = async (req, res, next) => {
   }
 };
 
+/**
+ * Elimina un encargado por su CI.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para manejo de errores.
+ */
 export const deletencargadocontroller = async (req, res, next) => {
   try {
     const { ci } = req.params;

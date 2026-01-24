@@ -8,9 +8,10 @@ import {
 
 const router = express.Router();
 
-router.get("/search/:id", getsedebyidcontroller);
-router.get("/", getsedecontroller);
-router.post("/", postsedecontroller);
-router.delete("/:id", deletesedecontroller);
+// Definición de rutas para Sedes
+router.get("/search/:id", getsedebyidcontroller); // Buscar sede por ID
+router.get("/", getsedecontroller); // Obtener todas las sedes
+router.post("/", postsedecontroller); // Crear nueva sede
+router.delete("/:id", deletesedecontroller); // Eliminar sede por ID
 
 export default router;

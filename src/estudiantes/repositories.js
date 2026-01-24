@@ -6,6 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class EstudianteRepository {
+  /**
+   * Obtiene todos los estudiantes.
+   * @returns {Promise<Array>} Lista de estudiantes.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -17,11 +21,19 @@ export class EstudianteRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en EstudianteRepository.getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EstudianteRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Obtiene un estudiante por CI.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object|null>} Estudiante o null.
+   */
   static async getByCi(ci) {
     try {
       const result = await db.execute({
@@ -35,11 +47,19 @@ export class EstudianteRepository {
       });
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (err) {
-      console.error("Error en EstudianteRepository.getByCi:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EstudianteRepository.getByCi:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea un nuevo estudiante.
+   * @param {Object} params - Datos del estudiante.
+   * @returns {Promise<Object>} Resultado de la inserción.
+   */
   static async create({ ci, ci_type, nombre, apellido, email, telefono }) {
     const trx = await db.transaction();
     try {
@@ -55,27 +75,44 @@ export class EstudianteRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en EstudianteRepository.create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EstudianteRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Actualiza los datos de un estudiante.
+   * @param {number} ci - Cédula de identidad.
+   * @param {Object} params - Datos a actualizar.
+   * @returns {Promise<Object>} Resultado de la actualización.
+   */
   static async update(ci, { ci_type, nombre, apellido, email, telefono }) {
-    const trx = await db.transaction(); 
+    const trx = await db.transaction();
     try {
       await trx.execute({
         sql: "UPDATE Persona SET ci_type = ?, nombre = ?, apellido = ?, email = ?, telefono = ? WHERE ci = ?",
         args: [ci_type, nombre, apellido, email, telefono, ci],
       });
-      await trx.commit(); 
+      await trx.commit();
       return { success: true };
     } catch (err) {
-      await trx.rollback(); 
-      console.error("Error en EstudianteRepository.update:", err.message);
+      await trx.rollback();
+      console.error(
+        "DEPURACIÓN: Error en EstudianteRepository.update:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Elimina un estudiante.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(ci) {
     const trx = await db.transaction();
     try {
@@ -91,7 +128,10 @@ export class EstudianteRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en EstudianteRepository.delete:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EstudianteRepository.delete:",
+        err.message,
+      );
       throw err;
     }
   }

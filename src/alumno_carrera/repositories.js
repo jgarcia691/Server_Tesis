@@ -7,6 +7,10 @@ const __dirname = path.dirname(__filename);
 import db from "../../config/db.js";
 
 export class AlumnoCarreraRepository {
+  /**
+   * Obtiene todos los registros.
+   * @returns {Promise<Array>} Lista de registros.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -14,11 +18,19 @@ export class AlumnoCarreraRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en AlumnoCarreraRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea una asociación alumno-carrera.
+   * @param {Object} params - IDs de estudiante y carrera.
+   * @returns {Promise<Object>} Resultado de la inserción.
+   */
   static async create({ id_estudiante, id_carrera }) {
     try {
       const result = await db.execute({
@@ -30,7 +42,10 @@ export class AlumnoCarreraRepository {
       });
       return result;
     } catch (err) {
-      console.error("Error en create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en AlumnoCarreraRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }

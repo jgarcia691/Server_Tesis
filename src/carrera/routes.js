@@ -8,10 +8,10 @@ import {
 
 const router = express.Router();
 
-// Define las rutas
-router.get("/", getcarreracontroller);
-router.get("/:cod", getcarreracodcontroller);
-router.post("/", postcarreracontroller);
-router.delete("/:cod", deletecarreracontroller);
+// Definición de rutas para Carreras
+router.get("/", getcarreracontroller); // Obtener todas las carreras
+router.get("/:cod", getcarreracodcontroller); // Obtener carrera por código
+router.post("/", postcarreracontroller); // Crear nueva carrera
+router.delete("/:cod", deletecarreracontroller); // Eliminar carrera
 
 export default router;

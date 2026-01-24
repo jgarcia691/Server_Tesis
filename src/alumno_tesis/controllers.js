@@ -6,6 +6,12 @@ const __dirname = path.dirname(__filename);
 
 import { AlumnoTesisService } from "./services.js";
 
+/**
+ * Obtiene todas las relaciones alumno-tesis.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const getAlumnoTesisController = async (req, res, next) => {
   try {
     const result = await AlumnoTesisService.getAll();
@@ -15,6 +21,12 @@ export const getAlumnoTesisController = async (req, res, next) => {
   }
 };
 
+/**
+ * Obtiene una relación alumno-tesis por su ID.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const getAlumnoTesisByIdController = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
@@ -32,13 +44,19 @@ export const getAlumnoTesisByIdController = async (req, res, next) => {
   }
 };
 
+/**
+ * Crea una nueva relación alumno-tesis.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const postAlumnoTesisController = async (req, res, next) => {
   try {
     const { id_estudiante, id_tesis } = req.body;
 
     if (!id_estudiante || !id_tesis) {
       return res.status(400).json({
-        message: "Todos los campos son obligatorios:id_estudiante, id_tesis",
+        message: "Todos los campos son obligatorios: id_estudiante, id_tesis",
       });
     }
 
@@ -55,16 +73,20 @@ export const postAlumnoTesisController = async (req, res, next) => {
   }
 };
 
+/**
+ * Elimina una relación alumno-tesis por ID.
+ * @param {Object} req - Objeto de solicitud.
+ * @param {Object} res - Objeto de respuesta.
+ * @param {Function} next - Middleware de error.
+ */
 export const deleteAlumnoTesisController = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
 
     if (!id || isNaN(id)) {
-      return res
-        .status(400)
-        .json({
-          message: "El campo id es obligatorio y debe ser un número válido.",
-        });
+      return res.status(400).json({
+        message: "El campo id es obligatorio y debe ser un número válido.",
+      });
     }
 
     const result = await AlumnoTesisService.delete(id);

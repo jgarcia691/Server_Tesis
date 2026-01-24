@@ -6,6 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class CarreraRepository {
+  /**
+   * Obtiene todas las carreras.
+   * @returns {Promise<Array>} Lista de carreras.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -13,11 +17,19 @@ export class CarreraRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Obtiene una carrera por su código.
+   * @param {number} codigo - Código de la carrera.
+   * @returns {Promise<Object|null>} Carrera o null.
+   */
   static async getCarrera(codigo) {
     try {
       const result = await db.execute({
@@ -26,11 +38,19 @@ export class CarreraRepository {
       });
       return result.rows.length ? result.rows[0] : null;
     } catch (err) {
-      console.error("Error en getCarrera:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraRepository.getCarrera:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea una nueva carrera.
+   * @param {Object} params - Datos de la carrera.
+   * @returns {Promise<Object>} Resultado de la inserción.
+   */
   static async create({ codigo, nombre, campo }) {
     try {
       const result = await db.execute({
@@ -39,11 +59,19 @@ export class CarreraRepository {
       });
       return result;
     } catch (err) {
-      console.error("Error en create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Elimina una carrera.
+   * @param {number} codigo - Código de la carrera.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(codigo) {
     try {
       const result = await db.execute({
@@ -52,7 +80,10 @@ export class CarreraRepository {
       });
       return result;
     } catch (err) {
-      console.error("Error en delete:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en CarreraRepository.delete:",
+        err.message,
+      );
       throw err;
     }
   }

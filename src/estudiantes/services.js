@@ -8,16 +8,28 @@ const __dirname = path.dirname(__filename);
 import { EstudianteRepository } from "./repositories.js";
 
 export class EstudianteService {
+  /**
+   * Obtiene todos los estudiantes.
+   * @returns {Promise<Object>} Resultado con la lista de estudiantes.
+   */
   static async getAll() {
     try {
       const estudiantes = await EstudianteRepository.getAll();
       return { status: "success", data: estudiantes };
     } catch (error) {
-      console.error("Error en EstudianteService.getAll:", error.message);
+      console.error(
+        "DEPURACIÓN: Error en EstudianteService.getAll:",
+        error.message,
+      );
       throw new Error("No se pudieron obtener los estudiantes.");
     }
   }
 
+  /**
+   * Obtiene un estudiante por su CI.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object>} Resultado con el estudiante.
+   */
   static async getByCi(ci) {
     try {
       const estudiante = await EstudianteRepository.getByCi(ci);
@@ -28,13 +40,18 @@ export class EstudianteService {
       return { status: "success", data: estudiante };
     } catch (error) {
       console.error(
-        `Error en EstudianteService.getByCi (CI: ${ci}):`,
-        error.message
+        `DEPURACIÓN: Error en EstudianteService.getByCi (CI: ${ci}):`,
+        error.message,
       );
       throw new Error(error.message);
     }
   }
 
+  /**
+   * Crea un nuevo estudiante.
+   * @param {Object} data - Datos del estudiante.
+   * @returns {Promise<Object>} Resultado de la creación.
+   */
   static async create(data) {
     try {
       if (
@@ -75,13 +92,19 @@ export class EstudianteService {
       ) {
         throw new Error("El correo electrónico ya está registrado.");
       }
-      
+
       // 💡 SOLUCIÓN: Relanzar el error original de la base de datos (como Persona.ci)
       // para que el controlador pueda leer 'error.code' y gestionarlo.
       throw error;
     }
   }
 
+  /**
+   * Actualiza un estudiante.
+   * @param {number} ci - Cédula de identidad.
+   * @param {Object} data - Datos a actualizar.
+   * @returns {Promise<Object>} Resultado de la actualización.
+   */
   static async update(ci, data) {
     try {
       if (
@@ -100,7 +123,7 @@ export class EstudianteService {
         typeof data.email !== "string" ||
         typeof data.telefono !== "string"
       ) {
-        throw new Error("codigo debe ser numero, campo y nombre cadenas.");
+        throw new Error("Tipos de datos inválidos (cadenas esperadas).");
       }
       const resultado = await EstudianteRepository.update(ci, data);
       return {
@@ -110,13 +133,18 @@ export class EstudianteService {
       };
     } catch (error) {
       console.error(
-        `Error en EstudianteService.update (CI: ${ci}):`,
-        error.message
+        `DEPURACIÓN: Error en EstudianteService.update (CI: ${ci}):`,
+        error.message,
       );
       throw new Error("No se pudo actualizar el estudiante: " + error.message);
     }
   }
 
+  /**
+   * Elimina un estudiante.
+   * @param {number} ci - Cédula de identidad.
+   * @returns {Promise<Object>} Resultado de la eliminación.
+   */
   static async delete(ci) {
     try {
       const resultado = await EstudianteRepository.delete(ci);
@@ -127,8 +155,8 @@ export class EstudianteService {
       };
     } catch (error) {
       console.error(
-        `Error en EstudianteService.delete (CI: ${ci}):`,
-        error.message
+        `DEPURACIÓN: Error en EstudianteService.delete (CI: ${ci}):`,
+        error.message,
       );
       throw new Error("No se pudo eliminar el estudiante: " + error.message);
     }

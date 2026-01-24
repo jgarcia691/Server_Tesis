@@ -2,6 +2,13 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 dotenv.config();
 
+/**
+ * Middleware para verificar la validez de un token JWT.
+ * Se espera que el token se envíe en el encabezado 'Authorization' con el formato 'Bearer <token>'.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función middleware para continuar con la ejecución.
+ */
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
 

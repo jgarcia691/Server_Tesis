@@ -6,6 +6,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export class EncargadoRepository {
+  /**
+   * Obtiene todos los encargados de la BD.
+   * @returns {Promise<Array>} Lista de encargados.
+   */
   static async getAll() {
     try {
       const result = await db.execute({
@@ -17,11 +21,19 @@ export class EncargadoRepository {
       });
       return result.rows;
     } catch (err) {
-      console.error("Error en EncargadoRepository.getAll:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EncargadoRepository.getAll:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Obtiene un encargado por CI de la BD.
+   * @param {number} ci - CI del encargado.
+   * @returns {Promise<Object|null>} El encargado o null.
+   */
   static async getEncargado(ci) {
     try {
       const result = await db.execute({
@@ -35,11 +47,19 @@ export class EncargadoRepository {
       });
       return result.rows.length > 0 ? result.rows[0] : null;
     } catch (err) {
-      console.error("Error en EncargadoRepository.getEncargado:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EncargadoRepository.getEncargado:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Crea un encargado en la BD (inserta en Persona y en Encargado).
+   * @param {Object} params - Datos del encargado.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async create({
     ci,
     ci_type,
@@ -63,11 +83,20 @@ export class EncargadoRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en EncargadoRepository.create:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EncargadoRepository.create:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Actualiza los datos de un encargado.
+   * @param {number} ci - CI del encargado.
+   * @param {Object} params - Datos a actualizar.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async update(ci, { nombre, apellido, email, telefono, id_sede }) {
     const trx = await db.transaction();
     try {
@@ -83,11 +112,19 @@ export class EncargadoRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en EncargadoRepository.update:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EncargadoRepository.update:",
+        err.message,
+      );
       throw err;
     }
   }
 
+  /**
+   * Elimina un encargado de la BD.
+   * @param {number} ci - CI del encargado.
+   * @returns {Promise<Object>} Resultado exitoso.
+   */
   static async delete(ci) {
     const trx = await db.transaction();
     try {
@@ -103,7 +140,10 @@ export class EncargadoRepository {
       return { success: true };
     } catch (err) {
       await trx.rollback();
-      console.error("Error en EncargadoRepository.delete:", err.message);
+      console.error(
+        "DEPURACIÓN: Error en EncargadoRepository.delete:",
+        err.message,
+      );
       throw err;
     }
   }

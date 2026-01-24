@@ -11,7 +11,7 @@ const router = express.Router();
 // Obtener todos los registros de Alumno_carrera
 router.get("/", getAlumnoCarreraController);
 
-// Obtener registro de Alumno_carrera por su codigo
+// Obtener registro de Alumno_carrera por su código
 router.get("/:codigo", getAlumnoCarreraByCodigoController);
 
 // Crear un nuevo registro de Alumno_carrera

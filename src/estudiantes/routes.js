@@ -9,11 +9,11 @@ import {
 
 const router = express.Router();
 
-//router.get('/username/:username', getallEstudiantesControllers);
-router.get("/", getallEstudiantesControllers);
-router.get("/ci/:ci", getidControllers);
-router.post("/", createEstudianteControllers);
-router.put("/:ci", updateEstudianteControllers);
-router.delete("/:ci", deleteEstudianteControllers);
+// router.get('/username/:username', getallEstudiantesControllers);
+router.get("/", getallEstudiantesControllers); // Obtener todos los estudiantes
+router.get("/ci/:ci", getidControllers); // Obtener un estudiante por CI
+router.post("/", createEstudianteControllers); // Crear un nuevo estudiante
+router.put("/:ci", updateEstudianteControllers); // Actualizar un estudiante
+router.delete("/:ci", deleteEstudianteControllers); // Eliminar un estudiante
 
 export default router;
