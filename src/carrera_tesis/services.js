@@ -46,10 +46,9 @@ export class CarreraTesisService {
 
       if (
         typeof data.id !== "number" ||
-        typeof data.id_carrera !== "number" ||
-        typeof data.id_tesis !== "number"
+        typeof data.id_carrera !== "number"
       ) {
-        throw new Error("Todos los campos deben ser números.");
+        throw new Error("id e id_carrera deben ser números.");
       }
 
       const result = await CarreraTesisRepository.create(data);

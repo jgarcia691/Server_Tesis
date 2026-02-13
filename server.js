@@ -50,15 +50,21 @@ app.use(handleErrors);
 
 const PORT = process.env.PORT || 8080;
 
-(async () => {
-  try {
-    await initDb();
-    console.log("Base de datos inicializada.");
-    app.listen(PORT, () => {
-      console.log(`Servidor corriendo en http://localhost:${PORT}`);
-    });
-  } catch (err) {
-    console.error("Error inicializando la base de datos:", err.message);
-    process.exit(1);
-  }
-})();
+// Exportar app para testing
+export default app;
+
+// Solo iniciar el servidor si se ejecuta directamente este archivo
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  (async () => {
+    try {
+      await initDb();
+      console.log("Base de datos inicializada.");
+      app.listen(PORT, () => {
+        console.log(`Servidor corriendo en http://localhost:${PORT}`);
+      });
+    } catch (err) {
+      console.error("Error inicializando la base de datos:", err.message);
+      process.exit(1);
+    }
+  })();
+}

@@ -69,10 +69,9 @@ export class AlumnoTesisService {
       }
 
       if (
-        typeof data.id_estudiante !== "number" ||
-        typeof data.id_tesis !== "number"
+        typeof data.id_estudiante !== "number"
       ) {
-        throw new Error("Todos los campos deben ser números.");
+        throw new Error("id_estudiante debe ser número.");
       }
 
       const result = await AlumnoTesisRepository.create(data);

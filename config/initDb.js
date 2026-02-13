@@ -85,7 +85,7 @@ export async function initDb() {
   // Las llaves foráneas apuntan a las nuevas tablas de roles.
   await db.execute(`
     CREATE TABLE IF NOT EXISTS Tesis (
-      id INTEGER PRIMARY KEY,
+      id TEXT PRIMARY KEY,
       id_encargado INTEGER NOT NULL,
       id_sede INTEGER NOT NULL,
       id_tutor INTEGER NOT NULL,
@@ -104,7 +104,7 @@ export async function initDb() {
   // La llave foránea apunta a la nueva tabla de rol.
   await db.execute(`
     CREATE TABLE IF NOT EXISTS Jurado (
-      id_tesis INTEGER NOT NULL,
+      id_tesis TEXT NOT NULL,
       id_profesor INTEGER NOT NULL,
       PRIMARY KEY (id_tesis, id_profesor),
       FOREIGN KEY (id_tesis) REFERENCES Tesis(id) ON DELETE CASCADE,
@@ -117,7 +117,7 @@ export async function initDb() {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS Alumno_tesis (
       id_estudiante INTEGER NOT NULL,
-      id_tesis INTEGER NOT NULL,
+      id_tesis TEXT NOT NULL,
       FOREIGN KEY (id_estudiante) REFERENCES Estudiante(estudiante_ci) ON DELETE CASCADE,
       FOREIGN KEY (id_tesis) REFERENCES Tesis(id) ON DELETE CASCADE,
       PRIMARY KEY (id_tesis, id_estudiante)
@@ -141,7 +141,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS Carrera_tesis (
       id INTEGER PRIMARY KEY,
       id_carrera INTEGER NOT NULL,
-      id_tesis INTEGER NOT NULL,
+      id_tesis TEXT NOT NULL,
       FOREIGN KEY (id_carrera) REFERENCES Carrera(codigo) ON DELETE CASCADE,
       FOREIGN KEY (id_tesis) REFERENCES Tesis(id) ON DELETE CASCADE
     );

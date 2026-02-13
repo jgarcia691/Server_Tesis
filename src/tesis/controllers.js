@@ -244,12 +244,11 @@ export const getTesis = async (req, res, next) => {
           )) FILTER (WHERE p_jur.ci IS NOT NULL) as jurados
         ${baseQuery}
         GROUP BY t.id
-        ORDER BY ${
-          req.query.sortBy === "nombre"
-            ? "t.nombre COLLATE NOCASE"
-            : req.query.sortBy === "fecha"
-              ? "t.fecha"
-              : "t.id"
+        ORDER BY ${req.query.sortBy === "nombre"
+          ? "t.nombre COLLATE NOCASE"
+          : req.query.sortBy === "fecha"
+            ? "t.fecha"
+            : "t.id"
         } ${req.query.order === "asc" ? "ASC" : "DESC"}
         LIMIT ? OFFSET ?
       `,
@@ -442,6 +441,7 @@ export const uploadTesis = async (req, res, next) => {
 
   const {
     id,
+    id_tesis, // Aceptar id_tesis como alias
     nombre,
     id_tutor,
     id_encargado,
@@ -452,9 +452,11 @@ export const uploadTesis = async (req, res, next) => {
     id_jurados,
   } = req.body;
 
+  const finalId = id || id_tesis;
+
   // Validaciones obligatorias
   if (
-    !id ||
+    !finalId ||
     !nombre ||
     !id_tutor ||
     !id_encargado ||
@@ -541,7 +543,7 @@ export const uploadTesis = async (req, res, next) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     const params = [
-      id,
+      finalId,
       idEncargadoNum,
       idSedeNum,
       idTutorNum,
@@ -553,7 +555,7 @@ export const uploadTesis = async (req, res, next) => {
     ];
 
     const result = await trx.execute({ sql: sqlTesis, args: params });
-    const newTesisId = id;
+    const newTesisId = finalId;
     console.log(`DEPURACIÓN: Tesis añadida con ID: ${newTesisId}`);
 
     for (const autorIdStr of idEstudiantesArray) {
@@ -929,8 +931,7 @@ export const getDownloadProgress = async (req, res, next) => {
     };
 
     console.log(
-      `[${jobId}] 📤 Enviando respuesta: estado="${
-        response.status
+      `[${jobId}] 📤 Enviando respuesta: estado="${response.status
       }", URL de descarga=${response.downloadUrl ? "presente" : "nulo"}`,
     );
     res.json(response);
@@ -1052,8 +1053,7 @@ export const streamDownloadProgress = async (req, res, next) => {
             `[${jobId}] 📡 SSE: Estado final detectado: "${currentProgress.status}"`,
           );
           console.log(
-            `[${jobId}] 📡 SSE: Enviando mensaje final con URL de descarga: ${
-              data.downloadUrl || "nulo"
+            `[${jobId}] 📡 SSE: Enviando mensaje final con URL de descarga: ${data.downloadUrl || "nulo"
             }`,
           );
 
@@ -1538,15 +1538,13 @@ async function processDownloadAllTesis(jobId) {
         `[${jobId}] ✅ Verificación: Estado guardado correctamente como "completed"`,
       );
       console.log(
-        `[${jobId}] ✅ ZIP buffer disponible: ${
-          verifyProgress.zipBuffer ? "Sí" : "No"
+        `[${jobId}] ✅ ZIP buffer disponible: ${verifyProgress.zipBuffer ? "Sí" : "No"
         }`,
       );
     } else {
       console.error(`[${jobId}] ❌ ERROR: Estado NO se guardó correctamente!`);
       console.error(
-        `[${jobId}] Estado actual en verificación: ${
-          verifyProgress?.status || "undefined"
+        `[${jobId}] Estado actual en verificación: ${verifyProgress?.status || "undefined"
         }`,
       );
     }

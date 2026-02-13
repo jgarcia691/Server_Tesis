@@ -36,8 +36,8 @@ export const postjuradocontroller = async (req, res, next) => {
         .status(400)
         .json({ message: "Todos los campos son obligatorios" });
     }
-    if (typeof id_tesis !== "number" || typeof id_profesor !== "number") {
-      return res.status(400).json({ message: "Ambas ID deben ser números" });
+    if (typeof id_profesor !== "number") {
+      return res.status(400).json({ message: "El ID del profesor debe ser un número" });
     }
     await JuradoService.create({ id_tesis, id_profesor });
     res.status(201).json({ message: "Jurado asignado correctamente" });
@@ -61,8 +61,8 @@ export const deletejuradocontroller = async (req, res, next) => {
         .status(400)
         .json({ message: "Todos los campos son obligatorios" });
     }
-    if (typeof id_tesis !== "number" || typeof id_profesor !== "number") {
-      return res.status(400).json({ message: "Ambas ID deben ser números" });
+    if (typeof id_profesor !== "number") {
+      return res.status(400).json({ message: "El ID del profesor debe ser un número" });
     }
     await JuradoService.delete({ id_tesis, id_profesor });
     res.status(201).json({ message: "Jurado eliminado correctamente" });

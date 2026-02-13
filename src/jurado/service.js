@@ -39,10 +39,9 @@ export class JuradoService {
         throw new Error("Todos los campos son obligatorios");
       }
       if (
-        typeof data.id_tesis !== "number" ||
         typeof data.id_profesor !== "number"
       ) {
-        throw new Error("id_tesis e id_profesor deben ser números.");
+        throw new Error("id_profesor debe ser número.");
       }
       const resultado = await JuradoRepository.create(data);
       console.log("DEPURACIÓN: Jurado creado exitosamente:", resultado);
@@ -69,10 +68,9 @@ export class JuradoService {
         throw new Error("Todos los campos son obligatorios");
       }
       if (
-        typeof data.id_tesis !== "number" ||
         typeof data.id_profesor !== "number"
       ) {
-        throw new Error("id_tesis e id_profesor deben ser números.");
+        throw new Error("id_profesor debe ser número.");
       }
       console.log(
         "DEPURACIÓN: Sentencia SQL a ejecutar:",

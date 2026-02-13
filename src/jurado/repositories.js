@@ -19,7 +19,7 @@ export class JuradoRepository {
         sql: "SELECT * FROM jurado WHERE id_tesis = ?",
         args: [id_tesis],
       });
-      return result.rows.length ? result.rows[0] : null;
+      return result.rows;
     } catch (err) {
       console.error(
         "DEPURACIÓN: Error en JuradoRepository.getJurado:",
