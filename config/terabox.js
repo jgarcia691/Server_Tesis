@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import TeraboxUploader from "terabox-upload-tool";
+import TeraboxUploader from "../src/utils/TeraboxUploader.js";
 
 const credentials = {
   ndus: process.env.TERABOX_NDUS,
@@ -32,7 +32,7 @@ export async function uploadBufferToTerabox(
   } finally {
     try {
       fs.unlinkSync(tmpPath);
-    } catch {}
+    } catch { }
   }
 }
 
