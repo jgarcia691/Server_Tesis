@@ -53,17 +53,23 @@ const PORT = process.env.PORT || 8080;
 // Exportar app para testing
 export default app;
 
+// Inicializar base de datos al cargar el módulo (necesario para Vercel)
+try {
+  await initDb();
+  console.log("Base de datos inicializada.");
+} catch (err) {
+  console.error("Error inicializando la base de datos:", err.message);
+}
+
 // Solo iniciar el servidor si se ejecuta directamente este archivo
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   (async () => {
     try {
-      await initDb();
-      console.log("Base de datos inicializada.");
       app.listen(PORT, () => {
         console.log(`Servidor corriendo en http://localhost:${PORT}`);
       });
     } catch (err) {
-      console.error("Error inicializando la base de datos:", err.message);
+      console.error("Error iniciando el servidor:", err.message);
       process.exit(1);
     }
   })();
