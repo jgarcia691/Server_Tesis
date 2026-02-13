@@ -14,6 +14,12 @@ export async function initDb() {
     );
   `);
 
+  // Seed Sede
+  await db.execute(`
+    INSERT OR IGNORE INTO Sede (id, nombre, direccion, telefono) VALUES
+    (8, 'Villa Universitaria', 'Av. Universidad', '0286-9999999');
+  `);
+
   // Carrera
   await db.execute(`
     CREATE TABLE IF NOT EXISTS Carrera (
