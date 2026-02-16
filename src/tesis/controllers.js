@@ -10,6 +10,7 @@ import {
   getDownloadLinkFromFsId,
 } from "../../config/terabox.js";
 import { updateTesisStatus as updateTesisStatusService } from "./services.js";
+import { Stream } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -679,6 +680,7 @@ export const updateTesis = async (req, res, next) => {
     // Crear la transacción justo antes del UPDATE (o la crea si aún no existe)
     if (!trx) trx = await db.transaction();
 
+    // Modificación para soportar múltiples partes (Split Upload)
     let query = `UPDATE Tesis SET nombre = ?, fecha = ?, estado = ?, id_encargado = ?, id_sede = ?, id_tutor = ?`;
     let params = [
       nombre,
@@ -690,8 +692,41 @@ export const updateTesis = async (req, res, next) => {
     ];
 
     if (archivoUrl && teraboxFsId) {
-      query += `, archivo_url = ?, terabox_fs_id = ?`;
-      params.push(archivoUrl, String(teraboxFsId));
+      // Verificar si es una parte adicional (no la primera)
+      const isPart = req.file.originalname.match(/\.part(\d+)$/);
+      const partNum = isPart ? parseInt(isPart[1], 10) : 0;
+
+      if (partNum > 1) {
+        // Es una parte extra, intentamos appendear al ID existente
+        try {
+          // Consultar ID actual
+          const currentRes = await db.execute({
+            sql: "SELECT terabox_fs_id FROM Tesis WHERE id = ?",
+            args: [id],
+          });
+          const currentFsId = currentRes.rows[0]?.terabox_fs_id;
+
+          if (currentFsId) {
+            const newFsIdList = `${currentFsId},${teraboxFsId}`;
+            console.log(`DEPURACIÓN: Appendeando fs_id. Nuevo valor: ${newFsIdList}`);
+            query += `, terabox_fs_id = ?`; // No actualizamos archivo_url porque apunta a la primera parte (o carpeta)
+            params.push(newFsIdList);
+          } else {
+            // Si no hay ID previo (raro para parte > 1), guardamos el nuevo
+            query += `, archivo_url = ?, terabox_fs_id = ?`;
+            params.push(archivoUrl, String(teraboxFsId));
+          }
+        } catch (e) {
+          console.error("Error consultando fs_id previo:", e);
+          // Fallback a overwrite
+          query += `, archivo_url = ?, terabox_fs_id = ?`;
+          params.push(archivoUrl, String(teraboxFsId));
+        }
+      } else {
+        // Es parte 1 o archivo completo: Sobrescribir
+        query += `, archivo_url = ?, terabox_fs_id = ?`;
+        params.push(archivoUrl, String(teraboxFsId));
+      }
     }
 
     query += ` WHERE id = ?`;
@@ -793,17 +828,68 @@ export const downloadTesis = async (req, res, next) => {
     // A. Intentar obtener enlace
     if (row.terabox_fs_id) {
       try {
-        const linkData = await getDownloadLinkFromFsId(row.terabox_fs_id);
-        downloadLink =
-          linkData?.downloadLink || linkData?.dlink || linkData?.url;
+        const fsIds = String(row.terabox_fs_id).split(",");
+
+        if (fsIds.length > 1) {
+          console.log(`[INFO] Detectados múltiples archivos (${fsIds.length}). Iniciando streaming secuencial...`);
+
+          // Configurar headers para descarga como UN solo archivo
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `attachment; filename="${safeFileName}.pdf"`);
+
+          // Helper para pipear con promesa
+          const pipeStream = (source, dest) => {
+            return new Promise((resolve, reject) => {
+              source.pipe(dest, { end: false });
+              source.on('end', () => resolve());
+              source.on('error', (err) => reject(err));
+            });
+          };
+
+          for (let i = 0; i < fsIds.length; i++) {
+            const fid = fsIds[i].trim();
+            if (!fid) continue;
+
+            const linkData = await getDownloadLinkFromFsId(fid);
+            const url = linkData?.downloadLink || linkData?.dlink || linkData?.url;
+
+            if (url) {
+              console.log(`[Stream] Descargando parte ${i + 1}/${fsIds.length}: ${fid}`);
+              const response = await axios({
+                method: 'GET',
+                url: url,
+                responseType: 'stream',
+                headers: {
+                  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                  Referer: "https://www.terabox.com/",
+                  Cookie: `ndus=${process.env.TERABOX_NDUS}`
+                }
+              });
+              await pipeStream(response.data, res);
+            }
+          }
+          res.end(); // Cerrar respuesta al finalizar todos los chunks
+          return;
+
+        } else {
+          // Un solo archivo
+          const linkData = await getDownloadLinkFromFsId(row.terabox_fs_id);
+          downloadLink = linkData?.downloadLink || linkData?.dlink || linkData?.url;
+        }
       } catch (tbError) {
         console.error(`[ERROR] Fallo TeraBox: ${tbError.message}`);
+        // Fallback a archivo_url si falla y no hemos empezado a enviar
+        if (!res.headersSent && !downloadLink && row.archivo_url) {
+          downloadLink = row.archivo_url;
+        }
       }
     }
 
-    // B. Respaldo
-    if (!downloadLink && row.archivo_url) {
-      downloadLink = row.archivo_url;
+    // B. Respaldo (solo si no es multipart o falló todo antes de enviar headers)
+    if (!res.headersSent) {
+      if (!downloadLink && row.archivo_url) {
+        downloadLink = row.archivo_url;
+      }
     }
 
     if (!downloadLink) {
