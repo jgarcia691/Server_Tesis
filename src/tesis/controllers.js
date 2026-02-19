@@ -94,10 +94,10 @@ export const getTesis = async (req, res, next) => {
     const whereConditions = [];
     const queryArgs = [];
 
-    // Filtro por ID
+    // Filtro por ID (parcial)
     if (id) {
-      whereConditions.push("t.id = ?");
-      queryArgs.push(id);
+      whereConditions.push("CAST(t.id AS TEXT) LIKE ?");
+      queryArgs.push(`%${id}%`);
     }
 
     // Búsqueda por cadena (busca en nombre de tesis y nombres de autores)
